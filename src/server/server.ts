@@ -43,6 +43,7 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
 
 });
 
+
 // Start the server 
 const Port = 3000;
 app.listen(PORT, () => {
