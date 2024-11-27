@@ -22,7 +22,7 @@ app.get('/', (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html')); // [TODO] confirm index.html path 
 });
 
-app.use('/api', apiRouter); // [NOTE] set up apiRouter for test purpose
+app.use('/api', apiRouter); 
 
 // Catch-all route handler for any requests to an unknown route 
 app.use('*', (req: Request, res: Response) => {
