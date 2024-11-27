@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { CustomError } from './types';
 
 const app = express();
-const PORT: number = 3000;
+const PORT: number = 8080;
 const path = require('path');
 const cookieParser = require('cookie-parser');
 
@@ -45,7 +45,7 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
 
 
 // Start the server 
-const Port = 3000;
+const Port = 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
