@@ -1,5 +1,5 @@
 // Import and configuration 
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express'; // Modern typescript / EMS6 import syntax
 import { CustomError } from './types';
 
 const app = express();
