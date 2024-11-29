@@ -12,21 +12,21 @@ const apiRouter = require('./routes/apiRouter');
 
 // Middleware setup 
 
-app.use(express.static(path.resolve(__dirname, '..', '..', 'public'))); // [TODO] confirm static files path 
+app.use(express.static(path.resolve(__dirname, '..', '..', 'public'))); 
 app.use(express.json());
 app.use(cookieParser());
 
 // Routes
 
 app.get('/', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html')); // [TODO] confirm index.html path 
+  res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));  
 });
 
 app.use('/api', apiRouter); 
 
 // Catch-all route handler for any requests to an unknown route 
 app.use('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html')) // [TODO] confirm index.html path
+  res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));
 });
 
 // Error handling 

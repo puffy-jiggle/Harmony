@@ -10,4 +10,4 @@ const testMiddleware = {
 
 }
 
-module.exports = testMiddleware;
+export default testMiddleware;
