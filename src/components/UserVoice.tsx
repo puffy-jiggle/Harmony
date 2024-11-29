@@ -20,6 +20,7 @@ const UserVoice: React.FC = () => {
         <button className='btn btn-circle btn-error'>record</button>
       </div>
       <AudioPlayer audioURL={audioURL} />
+      <button className="btn btn-primary">upload</button>
     </div>
   );
 };
