@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import UserVoice from "./UserVoice"
 
 const App: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const App: React.FC = () => {
         <div className="mt-4">
           <Link to="/test" className="btn btn-primary">Go to Test Component</Link>
         </div>
+        <UserVoice />
       </div>
     </div>
   );
