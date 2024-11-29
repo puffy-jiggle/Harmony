@@ -4,13 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev": "concurrently \"npm start\" \"npm run start:server\" \"npm run tailwind\"",
-  "start": "webpack serve --config webpack.dev.js",
-  "build": "webpack --config webpack.prod.js",
-  "start:server": "nodemon src/server/server.ts",
-  "type-check": "tsc --noEmit",
-  "tailwind": "tailwindcss -i ./src/input.css -o ./public/output.css --watch"
-},
+    "dev": "concurrently \"npm start\" \"npm run start:server\" \"npm run tailwind\"",
+    "start": "webpack serve --config webpack.dev.js",
+    "build": "webpack --config webpack.prod.js",
+    "start:server": "nodemon src/server/server.ts",
+    "type-check": "tsc --noEmit",
+    "tailwind": "tailwindcss -i ./src/input.css -o ./public/output.css --watch"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -21,7 +21,8 @@
     "cookie-parser": "^1.4.7",
     "daisyui": "^4.12.14",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
