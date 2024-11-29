@@ -3,33 +3,22 @@ import { Link } from "react-router-dom";
 
 const App: React.FC = () => {
   return (
-    <div className="p-8">
-      <h1>Welcome to HarmonyMaker</h1>
-      <p className="mt-4">
-        <Link to="/test" className="btn btn-primary">Go to Test Component</Link>
-      </p>
+    <div className="bg-gray-100 flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-blue-600 mb-4">Hello My Melody!</h1>
+        <button className="btn btn-primary">Primary Button</button>
+        <button className="btn btn-secondary">Secondary Button</button>
+        <div className="card shadow-xl bg-base-100 p-4 mt-4">
+          <h2 className="card-title">DaisyUI Card</h2>
+          <p>This is a simple card component using DaisyUI.</p>
+        </div>
+        <div className="mt-4">
+          <Link to="/test" className="btn btn-primary">Go to Test Component</Link>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default App;
 
-
-// import React from "react";
-// import { useEffect } from "react";
-// import TestComponent from "./TestComponent"; // Import your TestComponent
-
-// const App: React.FC = () => {
-//   useEffect(() => {
-//     console.log("App component mounted"); // Example useEffect for future functionality
-//   }, []);
-
-//   return (
-//     <div>
-//       <h1>Welcome to HarmonyMaker</h1>
-//       <TestComponent /> {/* Render TestComponent here */}
-//     </div>
-//   );
-// };
-
-// export default App;

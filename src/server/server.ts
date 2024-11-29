@@ -1,31 +1,23 @@
-// Import and configuration 
-import express, { Request, Response, NextFunction } from 'express'; // Modern typescript / EMS6 import syntax
+import express, { Request, Response, NextFunction } from 'express';
 import { CustomError } from './types';
+import path from 'path';
 
 const app = express();
 const PORT: number = 8080;
-const path = require('path');
-const cookieParser = require('cookie-parser');
 
 // Import router 
 const apiRouter = require('./routes/apiRouter');
 
 // Middleware setup 
-
 app.use(express.static(path.resolve(__dirname, '..', '..', 'public'))); 
 app.use(express.json());
-app.use(cookieParser());
+const cookieParser = require('cookie-parser');
 
-// Routes
+// API routes
+app.use('/api', apiRouter);
 
-app.get('/', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));  
-});
-
-app.use('/api', apiRouter); 
-
-// Catch-all route handler for any requests to an unknown route 
-app.use('*', (req: Request, res: Response) => {
+// Serve React app for all other routes
+app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));
 });
 
@@ -40,13 +32,8 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
     statusCode: status,
     message: message,
   });
-
 });
 
-
-// Start the server 
-const Port = 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
