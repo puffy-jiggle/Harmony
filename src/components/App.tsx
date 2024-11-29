@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom"; // Import Link for client-side navigation
+import UserVoice from "./UserVoice"
 
 /**
  * App Component - Main landing page of the Harmony application
@@ -38,6 +39,7 @@ const App: React.FC = () => {
           {/* Link wraps the button for client-side routing to /test */}
           <Link to="/test" className="btn btn-primary">Go to Test Component</Link>
         </div>
+        <UserVoice />
       </div>
     </div>
   );
