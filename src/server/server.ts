@@ -9,17 +9,22 @@ const PORT: number = 8080;
 const apiRouter = require('./routes/apiRouter');
 
 // Middleware setup 
-app.use(express.static(path.resolve(__dirname, '..', '..', 'public'))); 
 app.use(express.json());
 const cookieParser = require('cookie-parser');
 
 // API routes
 app.use('/api', apiRouter);
 
-// Serve React app for all other routes
-app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));
-});
+// In development, don't serve static files from Express
+// as webpack dev server will handle this
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.resolve(__dirname, '..', '..', 'public'))); 
+  
+  // Serve React app for all other routes
+  app.get('*', (req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));
+  });
+}
 
 // Error handling 
 app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
