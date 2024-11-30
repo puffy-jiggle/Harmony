@@ -1,0 +1,15 @@
+# Python virtual environment
+venv/
+
+# Python cache files
+**/__pycache__/
+
+# Model weights and large files
+model_weights/*
+!model_weights/.gitkeep
+open_musiclm/laion_clap/630k-audioset-best.pt
+**/bpe_simple_vocab_16e6.txt.gz
+
+# Temporary files
+input/*.wav
+output/*.wav
