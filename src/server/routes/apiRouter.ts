@@ -27,6 +27,11 @@ router.get('/test', testMiddleware.testFunction, (req: Request, res: Response, n
   res.status(200).send('response from api/test route');
 });
 
+router.get('/audiotest', testMiddleware.uploadAudioToSupabase, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from api/audiotest route');
+});
+
+
 // [Note] This is a test route to check if the server works. 
 router.post('/upload', fileUpload.single('file'), audioController.upload, (req: Request, res: Response, next: NextFunction) => {
   res.status(200).send('response from api/test route');
