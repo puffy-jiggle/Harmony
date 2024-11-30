@@ -10,4 +10,9 @@ router.get('/test', testMiddleware.testFunction, (req: Request, res: Response, n
   res.status(200).send('response from api/test route');
 });
 
+router.get('/audiotest', testMiddleware.uploadAudioToSupabase, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from api/audiotest route');
+});
+
+
 module.exports = router;
