@@ -1,5 +1,6 @@
 import { useForm, SubmitHandler, Controller } from 'react-hook-form'
 import React, {useState, useEffect } from 'react'
+import e from 'cors'
 
 interface FormInput {
 
@@ -9,14 +10,14 @@ interface FormInput {
 
 }
 
-const Login = () => {
+const Login:React.FC = () => {
     const { control, handleSubmit, formState: { errors } } = useForm<FormInput>();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     //Form submit handler
     const onSubmit: SubmitHandler<FormInput> = async(data) => {
-
-        console.log('data', data)
+     
+        console.log('data check', data)
         try {
             // Send a POST request with the form data
             const response = await fetch('/login', {
@@ -29,7 +30,10 @@ const Login = () => {
                 }),
             });
            
-            const responseData = await response.json();
+            // if(!response.ok) {
+            //   throw new Error(`HTTP error! status: ${response.status}`)
+            // }
+            const responseData = await response
             console.log('Login successful:', responseData);
 
             setIsLoggedIn(true)
