@@ -9,7 +9,7 @@ const AudioPlayer: React.FC<AudioProps> = (props: AudioProps) => {
   console.log(audioURL)
   return (
     <div className='card shadow-xl bg-base-100 p-4 mt-4'>
-      <audio controls src={audioURL}></audio>
+      <audio controls className="outline-accent" src={audioURL}></audio>
     </div>
   );
 };
