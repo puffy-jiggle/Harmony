@@ -20,6 +20,9 @@ app.use('/api', apiRouter);
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, '..', '..', 'public', 'index.html'));
 });
+app.post('/login', (req: Request, res: Response) => {
+  res.send('received response')
+ })
 
 // Error handling 
 app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
