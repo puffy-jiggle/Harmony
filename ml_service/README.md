@@ -6,6 +6,7 @@ This directory contains the Python FastAPI service that wraps the accompaniment 
 
 1. Create a Python virtual environment:
 ```bash
+cd ml_service
 python3 -m venv venv
 source venv/bin/activate  
 ```
@@ -24,3 +25,14 @@ Optional for VScode users:
      - real_semcoarsetosem.transformer.5170.pt
      - coarse.transformer.18000.pt
 
+## Running the Service
+
+
+Start the FastAPI service:
+```bash
+cd ml_service
+uvicorn api.main:app --reload --port 8000
+```
+
+
+The service will be available at `http://localhost:8000`
