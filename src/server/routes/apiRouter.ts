@@ -37,4 +37,9 @@ router.post('/upload', fileUpload.single('file'), audioController.upload, (req: 
   res.status(200).send('response from api/test route');
 });
 
+// [Note] This is a test route to check if audio files are retieved from the server using the user id.
+router.get('/audio/:user_id', testMiddleware.getUserAudio, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from ')
+})
+
 export default router;
