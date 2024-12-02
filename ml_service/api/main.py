@@ -19,7 +19,7 @@ async def generate_music(audio_file: UploadFile = File(...)):  # Expect file upl
         shutil.copyfileobj(audio_file.file, buffer)
     
     # Run the generation process
-    # This calls your ML model to generate new audio
+    # This calls the ML model to generate new audio
     output_path = generator.process_audio()
     
     # Return the generated file to the client
