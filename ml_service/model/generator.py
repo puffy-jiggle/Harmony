@@ -102,8 +102,8 @@ class MusicGenerator:
             if file.suffix.lower() == '.wav':
                 return file
         raise FileNotFoundError(f"No WAV files found in {self.input_dir}")
-
-    def process_audio(self, audio_path=None, duration=5, time_steps_factor=75, semantic_steps=200, temperature=0.95, prompt=None):
+#   duration=5, time_steps_factor=75, semantic_steps=200, temperature=0.95
+    def process_audio(self, audio_path=None, duration=3, time_steps_factor=5, semantic_steps=2, temperature=0.95, prompt=None):
         """
         Process audio file and generate accompaniment
         
