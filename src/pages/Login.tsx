@@ -3,7 +3,6 @@ import React, {useState, useEffect } from 'react'
 import e from 'cors'
 
 interface FormInput {
-
     userName: string
     email: string
     password: string
