@@ -61,3 +61,7 @@ The service will be available at `http://localhost:8000`
 Once the service is running, view the interactive API documentation at:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
+
+NOTE FOR NEW PYTHON USERS:
+- you might need to Install Certificates. Follow the steps here: https://stackoverflow.com/questions/68275857/urllib-error-urlerror-urlopen-error-ssl-certificate-verify-failed-certifica
+- you also might need to instally python multipart, which you can do by entering ```pip install python-multipart```
