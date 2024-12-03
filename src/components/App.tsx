@@ -58,3 +58,4 @@ export default App;
  * - Tailwind classes can be customized in tailwind.config.js
  * - DaisyUI theme can be modified in the same config file
  */
+
