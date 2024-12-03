@@ -3,6 +3,7 @@ import express from 'express';
 import { Request, Response, NextFunction } from "express";
 import testMiddleware from '../controller/testMiddleware';
 import audioController from '../controller/audioController';
+import authController from '../controller/authController';
 import path from 'path';
 
 const router = express.Router();
@@ -36,5 +37,14 @@ router.get('/audiotest', testMiddleware.uploadAudioToSupabase, (req: Request, re
 router.post('/upload', fileUpload.single('file'), audioController.upload, (req: Request, res: Response, next: NextFunction) => {
   res.status(200).send('response from api/test route');
 });
+
+router.post('/login', authController.login, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from api/login route')
+})
+
+
+router.post('/register', (req: Request, res: Response) => {
+  res.status(200).send('hello')
+})
 
 export default router;
