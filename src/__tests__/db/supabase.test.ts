@@ -7,3 +7,5 @@ describe('Supabase Connection', () => {
     expect(error).toBeNull();
   });
 });
+
+// src/__tests__/db/supabase.test.ts

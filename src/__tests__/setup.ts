@@ -13,3 +13,5 @@ global.fetch = jest.fn(() =>
 if (typeof window !== 'undefined') {
   window.URL.createObjectURL = jest.fn();
 }
+
+//src/__tests__/setup.ts

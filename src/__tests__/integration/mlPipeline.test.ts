@@ -13,3 +13,5 @@ describe('ML Pipeline Integration', () => {
       expect(response.ok).toBe(true);
     });
   });
+
+  // src/__tests__/integration/mlPipeline.test.ts

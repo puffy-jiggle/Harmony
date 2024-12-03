@@ -12,3 +12,5 @@ describe('AudioPlayer Component', () => {
     expect(audioElement?.getAttribute('src')).toBe(testUrl);
   });
 });
+
+// src/__tests__/frontend/AudioPlayer.test.tsx

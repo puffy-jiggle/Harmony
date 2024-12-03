@@ -18,3 +18,5 @@ describe('Database Queries', () => {
     expect(data).toBeDefined();
   });
 });
+
+// src/__tests__/db/queries.test.ts

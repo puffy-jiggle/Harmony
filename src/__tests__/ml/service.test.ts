@@ -7,3 +7,5 @@ describe('ML Service', () => {
       expect(response.ok).toBe(true);
     });
   });
+
+  // src/__tests__/ml/service.test.ts

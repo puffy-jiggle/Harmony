@@ -15,3 +15,5 @@ describe('UserVoice Component', () => {
     expect(recordButton).toBeTruthy();
   });
 });
+
+// src/__tests__/frontend/UserVoice.test.tsx

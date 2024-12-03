@@ -12,3 +12,5 @@ describe('API Routes', () => {
     expect(response.status).toBe(200);
   });
 });
+
+// src/__tests__/backend/routes.test.ts
