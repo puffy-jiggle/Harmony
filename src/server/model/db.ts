@@ -17,4 +17,3 @@ const pool = new Pool({
 
 export default pool;
 
-//src/server/model/db.ts

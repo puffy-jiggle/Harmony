@@ -59,4 +59,3 @@ export default App;
  * - DaisyUI theme can be modified in the same config file
  */
 
-//src/components/App.tsx
