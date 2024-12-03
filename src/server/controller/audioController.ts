@@ -1,13 +1,50 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../model/db'
-import pool from "../model/db";
-import * as fs from 'fs';
+import { supabase } from '../model/db';
+import pool from '../model/db';
+import * as fs from 'node:fs/promises';
 
 // [Note] This is a test middleware to check if the server works
 const audioController = {
   upload: async (req: Request, res: Response, next: NextFunction) => {
     console.log('audioController.upload is hit');
-    console.log(req.body);
+    console.log('file', req.file);
+    if (req.file) {
+      try {
+        const audioFileHandle = await fs.open(req.file.path);
+
+        console.log(audioFileHandle);
+
+        const audioStream = await audioFileHandle.readFile();
+
+        const audioBlob = new Blob([audioStream])
+
+        audioFileHandle.close();
+
+        const formData = new FormData();
+
+        formData.append('audio_file', audioBlob);
+
+        const requestHeaders: HeadersInit = new Headers();
+
+        const mlResponse = await fetch(
+          'http://localhost:8000/generate',
+          {
+            method: 'POST',
+            headers: requestHeaders,
+            body: formData
+          }
+        );
+
+
+
+        console.log('mlResponse:', mlResponse);
+      } catch (error: any) {
+        console.error('Error:', error);
+        res.status(500).json({
+          error: error.message
+        });
+      }
+    }
     return next();
   },
 
@@ -28,7 +65,7 @@ const audioController = {
 
     try {
       // Read the file
-      const fileContent = fs.readFileSync(filePath);
+      const fileContent = await fs.readFile(filePath);
 
       // Step 1: Upload the file to Supabase Storage
 

@@ -17,4 +17,5 @@ public/output.css     # CSS output from Tailwind or other processors
 
 # System and IDE Files 
 .DS_Store             # macOS-specific system file (not needed in repo)
+**/.DS_Store
 .vscode/              # VS Code workspace settings (developer-specific)
