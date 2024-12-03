@@ -1,7 +1,7 @@
 // src/__tests__/frontend/UserVoice.test.tsx
 import React from 'react';
 import { render } from '@testing-library/react';
-import UserVoice from '../../components/UserVoice';
+import UserVoice from '../../../components/UserVoice';
 
 describe('UserVoice Component', () => {
   it('renders all required elements', () => {

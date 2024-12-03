@@ -12,7 +12,9 @@
     "start:server": "nodemon src/server/server.ts",
     "type-check": "tsc --noEmit",
     "tailwind": "tailwindcss -i ./src/input.css -o ./public/output.css --watch",
-    "test": "jest --config jest.config.ts"
+    "test:client": "jest -c jest.client.config.ts",
+    "test:server": "jest -c jest.server.config.ts",
+    "test": "npm run test:client && npm run test:server"
   },
   "author": "",
   "license": "ISC",
@@ -45,6 +47,7 @@
     "@types/pg": "^8.11.10",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/supertest": "^6.0.2",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.0",
     "eslint": "^9.16.0",
@@ -54,6 +57,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "nodemon": "^3.1.7",
     "postcss": "^8.4.49",
+    "supertest": "^7.0.0",
     "tailwindcss": "^3.4.15",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.1",
