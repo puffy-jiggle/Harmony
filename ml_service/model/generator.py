@@ -1,9 +1,16 @@
+import sys
+from pathlib import Path
 import torch
 import torchaudio
-from pathlib import Path
 from einops import rearrange
 from torchaudio.functional import resample
+from datetime import datetime
 
+# Add the project root directory to the Python path
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
+
+print("Loading MusicLM modules...")
 from open_musiclm.config import (
     create_clap_quantized_from_config,
     create_coarse_transformer_from_config,
@@ -20,116 +27,189 @@ from open_musiclm.open_musiclm import (
 )
 from open_musiclm.utils import int16_to_float32, float32_to_int16, zero_mean_unit_var_norm
 
-# Set paths
-BASE_DIR = Path(".")  # Root of repo
-WEIGHTS_DIR = BASE_DIR / "model_weights"
-OUTPUT_DIR = BASE_DIR / "generated_music"
-OUTPUT_DIR.mkdir(exist_ok=True)
+class MusicGenerator:
+    def __init__(self):
+        print("\nInitializing MusicGenerator...")
+        self.base_dir = Path(__file__).parent.parent
+        self.weights_dir = self.base_dir / "model_weights"
+        self.input_dir = self.base_dir / "input"
+        self.output_dir = self.base_dir / "output"
+        self.output_dir.mkdir(exist_ok=True)
 
-# Load model configs
-model_config = load_model_config(BASE_DIR / "open_musiclm/configs/model/musiclm_large_small_context.json")
-my_model_config = my_load_model_config(BASE_DIR / "open_musiclm/configs/model/my_musiclm_for_semcoarsetosem.json")
+        print("Loading model configs...")
+        self.model_config = load_model_config(
+            self.base_dir / "open_musiclm/configs/model/musiclm_large_small_context.json"
+        )
+        self.my_model_config = my_load_model_config(
+            self.base_dir / "open_musiclm/configs/model/my_musiclm_for_semcoarsetosem.json"
+        )
 
-# Model paths
-checkpoint_paths = {
-    "semcoarsetosem": WEIGHTS_DIR / "real_semcoarsetosem.transformer.5170.pt",
-    "coarse": WEIGHTS_DIR / "coarse.transformer.18000.pt",
-    "rvq": WEIGHTS_DIR / "clap.rvq.950_no_fusion.pt",
-    "kmeans": WEIGHTS_DIR / "kmeans_10s_no_fusion.joblib"
-}
+        # Model paths
+        self.checkpoint_paths = {
+            "semcoarsetosem": self.weights_dir / "real_semcoarsetosem.transformer.5170.pt",
+            "coarse": self.weights_dir / "coarse.transformer.18000.pt",
+            "rvq": self.weights_dir / "clap.rvq.950_no_fusion.pt",
+            "kmeans": self.weights_dir / "kmeans_10s_no_fusion.joblib"
+        }
 
-def process_audio(audio_path, duration=3):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Using device: {device}")
-    
-    # Initialize models
-    clap = create_clap_quantized_from_config(my_model_config, checkpoint_paths["rvq"], device)
-    wav2vec = create_hubert_kmeans_from_config(my_model_config, checkpoint_paths["kmeans"], device)
-    encodec_wrapper = create_encodec_from_config(my_model_config, device)
-    
-    # Initialize transformers
-    semcoarsetosem_transformer = create_semcoarsetosem_transformer_from_config(
-        my_model_config, checkpoint_paths["semcoarsetosem"], device
-    )
-    coarse_transformer = create_coarse_transformer_from_config(
-        model_config, checkpoint_paths["coarse"], device
-    )
-    
-    # Create stages
-    semcoarsetosem_stage = SemcoarsetosemStage(
-        semcoarsetosem_transformer=semcoarsetosem_transformer,
-        neural_codec=encodec_wrapper,
-        wav2vec=wav2vec,
-    )
-    
-    coarse_stage = CoarseStage(
-        coarse_transformer=coarse_transformer,
-        neural_codec=encodec_wrapper,
-        wav2vec=wav2vec,
-        clap=clap
-    )
+        self.device = 'cpu'
+        print(f"Using device: {self.device}")
+        self._initialize_models()
 
-    # Process input audio
-    data, sample_hz = torchaudio.load(audio_path)
-    if data.shape[0] > 1:
-        data = torch.mean(data, dim=0).unsqueeze(0)
+    def _initialize_models(self):
+        """Initialize all required models and stages"""
+        print("\nLoading models:")
+        print("  Loading CLAP model...")
+        self.clap = create_clap_quantized_from_config(
+            self.my_model_config, self.checkpoint_paths["rvq"], self.device
+        )
+        
+        print("  Loading wav2vec model...")
+        self.wav2vec = create_hubert_kmeans_from_config(
+            self.my_model_config, self.checkpoint_paths["kmeans"], self.device
+        )
+        
+        print("  Loading encodec model...")
+        self.encodec_wrapper = create_encodec_from_config(
+            self.my_model_config, self.device
+        )
 
-    target_length = int(10 * sample_hz)
-    normalized_data = zero_mean_unit_var_norm(data)
+        print("  Loading transformers...")
+        self.semcoarsetosem_transformer = create_semcoarsetosem_transformer_from_config(
+            self.my_model_config, self.checkpoint_paths["semcoarsetosem"], self.device
+        )
+        self.coarse_transformer = create_coarse_transformer_from_config(
+            self.model_config, self.checkpoint_paths["coarse"], self.device
+        )
 
-    data = data[:, :target_length]
-    normalized_data = normalized_data[:, :target_length]
-    
-    # Prepare audio for models
-    audio_for_encodec = resample(data, sample_hz, encodec_wrapper.sample_rate)
-    audio_for_wav2vec = resample(normalized_data, sample_hz, wav2vec.target_sample_hz)
+        print("  Creating stages...")
+        self.semcoarsetosem_stage = SemcoarsetosemStage(
+            semcoarsetosem_transformer=self.semcoarsetosem_transformer,
+            neural_codec=self.encodec_wrapper,
+            wav2vec=self.wav2vec,
+        )
+        self.coarse_stage = CoarseStage(
+            coarse_transformer=self.coarse_transformer,
+            neural_codec=self.encodec_wrapper,
+            wav2vec=self.wav2vec,
+            clap=self.clap
+        )
+        print("Models loaded successfully")
 
-    audio_for_encodec = int16_to_float32(float32_to_int16(audio_for_encodec)).to(device)
-    audio_for_wav2vec = int16_to_float32(float32_to_int16(audio_for_wav2vec)).to(device)
+    def get_input_audio_file(self):
+        """Find the first WAV file in the input directory"""
+        for file in self.input_dir.iterdir():
+            if file.suffix.lower() == '.wav':
+                return file
+        raise FileNotFoundError(f"No WAV files found in {self.input_dir}")
+#   duration=5, time_steps_factor=75, semantic_steps=200, temperature=0.95
+    def process_audio(self, audio_path=None, duration=3, time_steps_factor=5, semantic_steps=2, temperature=0.95, prompt=None):
+        """
+        Process audio file and generate accompaniment
+        
+        Args:
+            audio_path (str or Path, optional): Path to input audio file. If None, uses first audio file in input directory
+            duration (int): Duration of generated accompaniment in seconds
+            time_steps_factor (int): Multiplier for time steps calculation (duration * time_steps_factor)
+            semantic_steps (int): Number of semantic generation steps
+            temperature (float): Temperature for generation (0.0 to 1.0). Higher values = more creative/random
+            prompt (str, optional): Text prompt for generation. Defaults to piano accompaniment.
+        """
+        if audio_path is None:
+            audio_path = self.get_input_audio_file()
+        else:
+            audio_path = Path(audio_path)
+            if not audio_path.is_absolute():
+                audio_path = self.base_dir / audio_path
 
-    # Get token IDs
-    vocals_semantic_token_ids = get_or_compute_semantic_token_ids(None, audio_for_wav2vec, wav2vec)
-    vocals_coarse_token_ids, _ = get_or_compute_acoustic_token_ids(
-        None, None, audio_for_encodec, encodec_wrapper, 
-        model_config.global_cfg.num_coarse_quantizers
-    )
-    
-    # Text prompt for generation
-    text = ["Solo piano accompaniment with gentle playing"]
-    clap_token_ids = get_or_compute_clap_token_ids(None, clap, None, text)
+        print(f"\nProcessing audio file: {audio_path}")
+        print(f"Generation parameters:")
+        print(f"  Duration: {duration} seconds")
+        print(f"  Time steps factor: {time_steps_factor}")
+        print(f"  Semantic steps: {semantic_steps}")
+        print(f"  Temperature: {temperature}")
 
-    # Generate semantic IDs
-    generated_inst_semantic_ids = semcoarsetosem_stage.generate(
-        vocals_semantic_token_ids=vocals_semantic_token_ids,
-        vocals_coarse_token_ids=vocals_coarse_token_ids,
-        # max_time_steps=200,
-        max_time_steps=1,
-        temperature=0.95,
-    )
-    
-    # Generate waveform
-    generated_wave = coarse_stage.generate(
-        clap_token_ids=clap_token_ids,
-        semantic_token_ids=generated_inst_semantic_ids.squeeze(2),
-        # max_time_steps=duration*75,
-        max_time_steps=duration*5,
-        reconstruct_wave=True,
-        include_eos_in_output=False,
-        append_eos_to_conditioning_tokens=True,
-        temperature=0.95,
-    )
+        print("\nLoading and preprocessing audio...")
+        data, sample_hz = torchaudio.load(audio_path)
+        if data.shape[0] > 1:
+            data = torch.mean(data, dim=0).unsqueeze(0)
 
-    generated_wave = rearrange(generated_wave, 'b n -> b 1 n').detach().cpu()
+        target_length = int(10 * sample_hz)
+        normalized_data = zero_mean_unit_var_norm(data)
 
-    # Save output
-    output_name = f"{Path(audio_path).stem}_generated.wav"
-    output_path = OUTPUT_DIR / output_name
+        data = data[:, :target_length]
+        normalized_data = normalized_data[:, :target_length]
 
-    # Save accompaniment alone
-    torchaudio.save(output_path, generated_wave[0], encodec_wrapper.sample_rate)
-    print(f"Generated audio saved to: {output_path}")
-    
+        audio_for_encodec = resample(data, sample_hz, self.encodec_wrapper.sample_rate)
+        audio_for_wav2vec = resample(normalized_data, sample_hz, self.wav2vec.target_sample_hz)
+
+        audio_for_encodec = int16_to_float32(float32_to_int16(audio_for_encodec)).to(self.device)
+        audio_for_wav2vec = int16_to_float32(float32_to_int16(audio_for_wav2vec)).to(self.device)
+
+        print("Generating token IDs...")
+        vocals_semantic_token_ids = get_or_compute_semantic_token_ids(
+            None, audio_for_wav2vec, self.wav2vec
+        )
+        vocals_coarse_token_ids, _ = get_or_compute_acoustic_token_ids(
+            None, None, audio_for_encodec, self.encodec_wrapper, 
+            self.model_config.global_cfg.num_coarse_quantizers
+        )
+
+        if prompt is None:
+            prompt = ["Diverse kinds of instrument and richness"]
+        elif isinstance(prompt, str):
+            prompt = [prompt]
+        print(f"Using prompt: {prompt[0]}")
+            
+        clap_token_ids = get_or_compute_clap_token_ids(None, self.clap, None, prompt)
+
+        print("Generating semantic IDs...")
+        generated_inst_semantic_ids = self.semcoarsetosem_stage.generate(
+            vocals_semantic_token_ids=vocals_semantic_token_ids,
+            vocals_coarse_token_ids=vocals_coarse_token_ids,
+            max_time_steps=semantic_steps,
+            temperature=temperature,
+        )
+
+        print("Generating waveform...")
+        generated_wave = self.coarse_stage.generate(
+            clap_token_ids=clap_token_ids,
+            semantic_token_ids=generated_inst_semantic_ids.squeeze(2),
+            max_time_steps=duration * time_steps_factor,
+            reconstruct_wave=True,
+            include_eos_in_output=False,
+            append_eos_to_conditioning_tokens=True,
+            temperature=temperature,
+        )
+
+        generated_wave = rearrange(generated_wave, 'b n -> b 1 n').detach().cpu()
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_name = f"{audio_path.stem}_{timestamp}_generated.wav"
+        output_path = self.output_dir / output_name
+
+        print("\nSaving generated audio...")
+        torchaudio.save(output_path, generated_wave[0], self.encodec_wrapper.sample_rate)
+        print(f"Generated audio saved to: {output_path}")
+        return output_path
+
+def main():
+    try:
+        # Adjustable parameters
+        params = {
+            'duration': 3,              # Duration in seconds
+            'time_steps_factor': 5,     # Multiplier for time steps (duration * time_steps_factor)
+            'semantic_steps': 1,        # Number of semantic generation steps
+            'temperature': 0.95,        # Temperature for generation (0.0 to 1.0)
+            'prompt': "Solo piano accompaniment with gentle playing"
+        }
+
+        generator = MusicGenerator()
+        generator.process_audio(**params)
+
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    # Example usage
-    input_path = "input/xiaoxingxing.wav"
-    process_audio(input_path)
+    main() 
