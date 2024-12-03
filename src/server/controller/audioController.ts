@@ -14,3 +14,5 @@ const audioController = {
 }
 
 export default audioController;
+
+//src/server/controller/audioController.ts
