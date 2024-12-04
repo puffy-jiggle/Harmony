@@ -34,18 +34,6 @@ app.get('*', (req: Request, res: Response) => {
 });
 
 
-
-  
-// app.post('/login', (req: Request, res: Response) => {
-//   console.log('Login data received:', req.body);  // Check if the backend is receiving the request
-//   const { username, email, password } = req.body;
-//   if (!username || !email || !password) {
-//       return res.status(400).json({ message: 'All fields are required.' });
-//   }
-//    res.status(200).json({ message: 'Login successful', data: { username, email } });
-// });
-  
-
 // Error handling 
 app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   const status = err.status || 500;
