@@ -2,21 +2,21 @@
 node_modules/
 
 # Production build
-dist/                 # Build artifacts for production
-public/bundle.js      # Webpack-generated bundle (not source-controlled)
-public/bundle.js.LICENSE.txt  # Webpack license file
-public/bundle.js.map  # Source map for debugging
-public/output.css     # CSS output from Tailwind or other processors
-ml_service/output/    # Transformed audio Output from the ML service
+dist/ 
+public/bundle.js 
+public/bundle.js.LICENSE.txt 
+public/bundle.js.map  
+public/output.css     
+ml_service/output/   
 
 # Environment variables
 .env
 
 # Logs and Temporary Files 
-*.log                 # Log files from server or development tools
-*.tmp                 # Temporary files
+*.log                 
+*.tmp                
 
 # System and IDE Files 
-.DS_Store             # macOS-specific system file (not needed in repo)
+.DS_Store             
 **/.DS_Store
-.vscode/              # VS Code workspace settings (developer-specific)
+.vscode/              
