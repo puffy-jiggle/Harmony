@@ -1,9 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { CustomError } from './types';
 import path from 'path';
+import bodyParser from 'body-parser';
 
 const app = express();
 const PORT: number = 8080;
+
 
 // Import router 
 import apiRouter from './routes/apiRouter';
@@ -17,7 +19,8 @@ app.use(cookieParser());
 
 app.use(express.static(path.resolve(__dirname, '..', '..', 'public'))); 
 app.use(express.json());
-
+app.use(bodyParser)
+app.use(express.urlencoded({ extended: true}));
 
 
 // app.get('/test', (req: Request, res: Response) => {
