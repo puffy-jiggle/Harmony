@@ -16,39 +16,32 @@ const Login: React.FC = () => {
   const onSubmit: SubmitHandler<FormInput> = async (data) => {
     console.log('data check', data);
 
-    try{
-      
+    try {
+      // Send a POST request with the form data
+      const response = await fetch('http://localhost:4040/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: data.userName,
+          email: data.email,
+          password: data.password,
+        }),
+      });
 
+      console.log('response', response)
+      // Handle response
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const responseData = await response.json()
+      console.log('Login successful:', responseData);
+
+      setIsLoggedIn(true);
     } catch (error) {
-
+      console.error('Login failed:', error);
+      setErrorMessage('Login failed!');
     }
-
-    // try {
-    //   // Send a POST request with the form data
-    //   const response = await fetch('http://localhost:8080/api/login', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       username: data.userName,
-    //       email: data.email,
-    //       password: data.password,
-    //     }),
-    //   });
-
-    //   console.log('response', response)
-    //   // Handle response
-    //   if (!response.ok) {
-    //     throw new Error(`HTTP error! status: ${response.status}`);
-    //   }
-      
-    //   const responseData = await response.json() // parse JSON data
-    //   console.log('Login successful:', responseData);
-
-    //   setIsLoggedIn(true);
-    // } catch (error) {
-    //   console.error('Login failed:', error);
-    //   setErrorMessage('Login failed!');
-    // }
   };
 
   useEffect(() => {
