@@ -23,7 +23,7 @@ const UserVoice: React.FC = () => {
       formData.append('file', audioFile);
     }
 
-    fetch('http://localhost:8080/api/upload', {
+    fetch('http://localhost:4040/api/upload', {
       method: 'POST',
       body: formData,
     }).then(res=>console.log(res))

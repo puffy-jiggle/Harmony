@@ -30,7 +30,12 @@ const audioController = {
           }
         );
         
-        console.log('mlResponse:', mlResponse);
+        console.log('mlResponse:', mlResponse.body);
+        res.status(275);
+        
+        mlResponse.body.pipeTo(res);
+
+        
       } catch (error: any) {
         console.error('Error:', error);
         res.status(500).json({
