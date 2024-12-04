@@ -11,5 +11,7 @@ model_weights/*
 open_musiclm/laion_clap/630k-audioset-best.pt
 
 # Temporary files
-input/*.wav
-output/*.wav
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
