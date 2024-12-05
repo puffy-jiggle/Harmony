@@ -10,6 +10,9 @@ const testMiddleware = {
   // test function 
   testFunction: async (req: Request, res: Response, next: NextFunction) => {
     console.log('testFunction is hit');
+    console.log('request headers', req.headers);
+    setTimeout(()=>{console.log('request body', req.body);}, 1000);
+    
     return next();
   },
 
