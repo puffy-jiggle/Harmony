@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AudioPlayer from './AudioPlayer';
 
 const UserVoice: React.FC = () => {
@@ -6,6 +6,40 @@ const UserVoice: React.FC = () => {
   const [audioURL, setAudioURL] = useState<string>('');
   const [generationStatus, setGenStatus] = useState<string | null>(null);
   const [genURL, setGenURL] = useState<string>('');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+
+  // Check login status on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('jwtToken');
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const saveGeneratedAudio = async () => {
+    try {
+      const token = localStorage.getItem('jwtToken');
+      const response = await fetch('http://localhost:4040/api/save-audio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          originalUrl: audioURL,
+          transformedUrl: genURL
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save audio');
+      }
+
+      // Show success message or update UI
+      alert('Audio saved successfully!');
+    } catch (error) {
+      console.error('Error saving audio:', error);
+      alert('Failed to save audio');
+    }
+  };
 
   console.log(audioFile);
 
@@ -58,7 +92,17 @@ const UserVoice: React.FC = () => {
         <h2 className='card-title'>Your accompAInament</h2>
       ) : null}
       {generationStatus === 'done' ? (
-        <AudioPlayer audioURL={genURL} />
+        <>
+          <AudioPlayer audioURL={genURL} />
+          {isLoggedIn && (
+            <button 
+              className='btn btn-secondary mt-2'
+              onClick={saveGeneratedAudio}
+            >
+              Save this version
+            </button>
+          )}
+        </>
       ) : generationStatus === 'loading' ? (
         <span className='loading loading-bars loading-lg'></span>
       ) : null}

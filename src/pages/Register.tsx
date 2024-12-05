@@ -164,3 +164,5 @@ const Register: React.FC = () => {
 };
 
 export default Register;
+
+//src/pages/Register.tsx
