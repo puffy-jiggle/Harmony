@@ -29,12 +29,13 @@ const audioController = {
             body: formData
           }
         );
-        
-        //console.log('mlResponse:', mlResponse.body);
-        res.status(275);
-        
-        //mlResponse.body.pipe(res);
 
+        
+        const responseBuffer = await mlResponse.arrayBuffer();
+        //const responseFile = new File([responseBuffer], 'responseFile.wav', {type: 'audio/wav'})
+        res.type('audio/wav')
+        res.status(275).send(responseBuffer)
+      
 
       } catch (error: any) {
         console.error('Error:', error);
