@@ -1,7 +1,7 @@
 {
   "name": "your-project-name",
   "version": "1.0.0",
-  "/*": "Development runs on webpack-dev-server port 3033, with API server on 4000",
+  "/*": "Development runs on webpack-dev-server port 3033, with API server on 4040",
   "/**": "Use 'npm run dev' for development, which starts both servers and Tailwind",
   "description": "",
   "main": "index.js",

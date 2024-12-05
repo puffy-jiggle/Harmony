@@ -58,7 +58,7 @@ const Register: React.FC = () => {
       console.log('Form data submitted:', formData);
 
     try {
-    const response = await fetch('http://localhost:4000/api/register', {
+    const response = await fetch('http://localhost:4040/api/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(formData)

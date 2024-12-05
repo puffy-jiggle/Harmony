@@ -6,7 +6,7 @@ import { CustomError } from './types';
 import apiRouter from './routes/apiRouter';
 
 const app = express();
-const PORT = 4000;
+const PORT = 4040;
 
 // Core middleware
 app.use(cors());
