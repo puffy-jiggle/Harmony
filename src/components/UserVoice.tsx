@@ -55,7 +55,7 @@ const UserVoice: React.FC = () => {
         upload
       </button>
       {generationStatus ? (
-        <h2 className='card-title'>Your accompAINament</h2>
+        <h2 className='card-title'>Your accompAInament</h2>
       ) : null}
       {generationStatus === 'done' ? (
         <AudioPlayer audioURL={genURL} />
