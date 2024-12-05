@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import {useNavigate} from 'react-router-dom';
 
 // Define types for form fields
 interface FormData {
@@ -21,6 +22,7 @@ const Register: React.FC = () => {
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   // Handle form field changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +58,7 @@ const Register: React.FC = () => {
       console.log('Form data submitted:', formData);
 
     try {
-    const response = await fetch('http://localhost:8080/api/register', {
+    const response = await fetch('http://localhost:4040/api/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(formData)
@@ -65,9 +67,10 @@ const Register: React.FC = () => {
 
     const data = await response
     console.log('Registration success:', data)
+    navigate('/login')
 
       // Reset form after successful submission
-      setFormData({ username: '', email: '', password: '', confirmPassword: '' });
+      // setFormData({ username: '', email: '', password: '', confirmPassword: '' });
     } catch(error) {
         console.error('Error during registration:', error);
         setSubmissionError('An error occurred during registration. Please try again.');
@@ -78,58 +81,85 @@ const Register: React.FC = () => {
 }
 
   return (
-    <div>
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center py-8">
+    <div className="max-w-md w-full bg-white p-8 border border-gray-300 shadow-lg rounded-lg">
+      <h1 className="text-2xl font-semibold text-gray-700 text-center mb-6">Register</h1>
+      
+      {submissionError && <div className="text-red-500 text-center mb-4">{submissionError}</div>}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Username Input */}
         <div>
-          <label>Username</label>
+          <label htmlFor="username" className="block text-gray-700">Username</label>
           <input
             type="text"
             name="username"
             value={formData.username}
             onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {errors.username && <span>{errors.username}</span>}
+          {errors.username && <span className="text-red-500 text-sm">{errors.username}</span>}
         </div>
 
+        {/* Email Input */}
         <div>
-          <label>Email</label>
+          <label htmlFor="email" className="block text-gray-700">Email</label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {errors.email && <span>{errors.email}</span>}
+          {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
         </div>
 
+        {/* Password Input */}
         <div>
-          <label>Password</label>
+          <label htmlFor="password" className="block text-gray-700">Password</label>
           <input
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {errors.password && <span>{errors.password}</span>}
+          {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
         </div>
 
+        {/* Confirm Password Input */}
         <div>
-          <label>Confirm Password</label>
+          <label htmlFor="confirmPassword" className="block text-gray-700">Confirm Password</label>
           <input
             type="password"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {errors.confirmPassword && <span>{errors.confirmPassword}</span>}
+          {errors.confirmPassword && <span className="text-red-500 text-sm">{errors.confirmPassword}</span>}
         </div>
 
+        {/* Submit Button */}
         <div>
-          <button type="submit">Register</button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-3 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400"
+          >
+            {isSubmitting ? 'Submitting...' : 'Register'}
+          </button>
         </div>
       </form>
+
+      <div className="text-center mt-4">
+        <p className="text-sm text-gray-600">
+          Already have an account?{' '}
+          <a href="/login" className="text-blue-500 hover:underline">Login here</a>
+        </p>
+      </div>
     </div>
+  </div>
   );
 };
 
