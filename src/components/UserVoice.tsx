@@ -4,6 +4,8 @@ import AudioPlayer from './AudioPlayer';
 const UserVoice: React.FC = () => {
   const [audioFile, setAudioFile] = useState<null | File>(null);
   const [audioURL, setAudioURL] = useState<string>('');
+  const [generationStatus, setGenStatus] = useState<string | null>(null);
+  const [genURL, setGenURL] = useState<string>('');
 
   console.log(audioFile);
 
@@ -17,6 +19,7 @@ const UserVoice: React.FC = () => {
 
   const fileUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    setGenStatus('loading');
 
     const formData = new FormData();
     if (audioFile) {
@@ -26,8 +29,14 @@ const UserVoice: React.FC = () => {
     fetch('http://localhost:4040/api/upload', {
       method: 'POST',
       body: formData,
-    }).then(res=>console.log(res))
-    .catch(err => console.error('Error occurred', err));
+    })
+      .then((res) => res.blob())
+      .then((blob) => {
+        setGenURL(URL.createObjectURL(blob));
+        console.log(genURL)
+        setGenStatus('done');
+      })
+      .catch((err) => console.error('Error occurred', err));
   };
 
   return (
@@ -42,7 +51,17 @@ const UserVoice: React.FC = () => {
         <button className='btn btn-circle btn-error'>record</button>
       </div>
       <AudioPlayer audioURL={audioURL} />
-      <button className='btn btn-primary' onClick={fileUpload}>upload</button>
+      <button className='btn btn-primary' onClick={fileUpload}>
+        upload
+      </button>
+      {generationStatus ? (
+        <h2 className='card-title'>Your accompAINament</h2>
+      ) : null}
+      {generationStatus === 'done' ? (
+        <AudioPlayer audioURL={genURL} />
+      ) : generationStatus === 'loading' ? (
+        <span className='loading loading-bars loading-lg'></span>
+      ) : null}
     </div>
   );
 };
