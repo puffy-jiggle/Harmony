@@ -3,6 +3,7 @@ import express from 'express';
 import { Request, Response, NextFunction } from "express";
 import testMiddleware from '../controller/testMiddleware';
 import audioController from '../controller/audioController';
+import authController from '../controller/authController';
 import path from 'path';
 
 const router = express.Router();
@@ -41,7 +42,15 @@ router.post('/upload', fileUpload.single('file'), audioController.upload, (req: 
   res.status(200).send('response from api/test route');
 });
 
+router.post('/login', authController.login, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from api/login route')
+})
+
+
+router.post('/register', authController.register)
 // [Note] This is a test route to check if audio files are retieved from the server using the user id.
+
+
 router.get('/audio/:user_id', testMiddleware.getUserAudio, (req: Request, res: Response, next: NextFunction) => {
   res.status(200).send('response from ')
 })

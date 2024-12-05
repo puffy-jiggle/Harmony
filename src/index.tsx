@@ -3,7 +3,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom"; // Core routing components
 import App from "./components/App";
 import TestComponent from "./components/TestComponent";
-
+import Login from "./pages/Login";
+import Register from "./pages/Register"
 /**
  * Main Application Entry Point
  * 
@@ -34,6 +35,8 @@ root.render(
         <Route path="/" element={<App />} />          {/* Home route */}
         <Route path="/test" element={<TestComponent />} />  {/* Test route */}
         <Route path="/app" element={<App />} />       {/* Alternate App route */}
+        <Route path="/login" element={<Login />} />       {/* Alternate App route */}
+        <Route path="/register" element={<Register />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

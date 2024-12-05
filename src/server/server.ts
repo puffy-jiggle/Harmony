@@ -13,6 +13,13 @@ app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 
+
+
+// app.get('/test', (req: Request, res: Response) => {
+//   res.sendStatus(250)
+// })
+
+
 // API routes
 app.use('/api', apiRouter);
 
