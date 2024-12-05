@@ -13,11 +13,11 @@ const audioController = {
         //read uploaded file and convert into a blob for sending over http
         const audioFileHandle = await fs.open(req.file.path);
         const audioStream = await audioFileHandle.readFile();
-        const audioBlob = new Blob([audioStream])
+        const audioFile = new File([audioStream], req.file.originalname, {type: req.file.mimetype})
         audioFileHandle.close();
 
         const formData = new FormData();
-        formData.append('audio_file', audioBlob);
+        formData.append('audio_file', audioFile);
 
         const requestHeaders: HeadersInit = new Headers();
 
@@ -30,7 +30,12 @@ const audioController = {
           }
         );
         
-        console.log('mlResponse:', mlResponse);
+        //console.log('mlResponse:', mlResponse.body);
+        res.status(275);
+        
+        //mlResponse.body.pipe(res);
+
+
       } catch (error: any) {
         console.error('Error:', error);
         res.status(500).json({
