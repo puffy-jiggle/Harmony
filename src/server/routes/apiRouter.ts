@@ -28,6 +28,10 @@ router.get('/test', testMiddleware.testFunction, (req: Request, res: Response, n
   res.status(200).send('response from api/test route');
 });
 
+router.post('/test', testMiddleware.testFunction, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from api/test route');
+});
+
 router.get('/audiotest', testMiddleware.uploadAudioToSupabase, (req: Request, res: Response, next: NextFunction) => {
   res.status(200).send('response from api/audiotest route');
 });
@@ -47,4 +51,10 @@ router.post('/register', (req: Request, res: Response) => {
   res.status(200).send('hello')
 })
 
+// [Note] This is a test route to check if audio files are retieved from the server using the user id.
+router.get('/audio/:user_id', testMiddleware.getUserAudio, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from ')
+})
+
 export default router;
+

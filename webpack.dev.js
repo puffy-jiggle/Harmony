@@ -12,5 +12,9 @@ module.exports = merge(common, {
     },
     port: 3033,
     hot: true,
-  },
+    proxy: [{
+      context: ['/api'],
+      target: 'http://localhost:4040',
+    }]
+  }
 });

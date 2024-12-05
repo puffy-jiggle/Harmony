@@ -2,14 +2,21 @@
 node_modules/
 
 # Production build
-/dist
-/build
+dist/ 
+public/bundle.js 
+public/bundle.js.LICENSE.txt 
+public/bundle.js.map  
+public/output.css     
+ml_service/output/   
 
 # Environment variables
 .env
 
-# System files
-.DS_Store
+# Logs and Temporary Files 
+*.log                 
+*.tmp                
 
-# IDE specific files
-.vscode/
+# System and IDE Files 
+.DS_Store             
+**/.DS_Store
+.vscode/              
