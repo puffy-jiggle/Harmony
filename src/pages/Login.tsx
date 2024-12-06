@@ -53,12 +53,12 @@ const Login: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    if(token) {
-      setIsLoggedIn(true);
-    }
-  },[])
+  // useEffect(() => {
+  //   const token = localStorage.getItem('jwtToken');
+  //   if(token) {
+  //     setIsLoggedIn(true);
+  //   }
+  // },[])
 
   // Logout handler
   const handleLogout = () => {
