@@ -10,11 +10,14 @@ const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || 'your_secret_key';
 const authController = {
 
     login: async (req: Request, res: Response) => {
-      console.log(req.body);
+      console.log('Login request body: ', req.body);
       const {username, password} = req.body
       try {
+        console.log('Login attempt for:', username); // Debug log
          if (!username || !password) {
-            return res.status(400).json({ message: 'All fields are required.' });
+            return res.status(400).json({ 
+              success: false,
+              message: 'All fields are required.' });
           }
         
       // Find the user by username 
@@ -25,14 +28,20 @@ const authController = {
       .single();
 
       if (error || !user) {
-        return res.status(400).json({ message: 'User not found'})
+        return res.status(400).json({ 
+          success: false,
+          message: 'User not found'
+        });
       }
 
       // Compare the password with the hashed password
       const passwordMatched = await bcrypt.compare(password, user.password)
 
       if (!passwordMatched) {
-        return res.status(400).json({message: 'Insvalid credential' })
+        return res.status(400).json({
+          success: false,
+          message: 'Insvalid credential' 
+        })
       }
 
       // Create a JWT token after successful login
@@ -42,11 +51,20 @@ const authController = {
         { expiresIn: '1h' } // Token expiration time (1hour)
       );
 
-      return res.status(200).json({ message: 'Login successful', token });  
+      console.log('Token generated:', token); // Debug log
+      return res.status(200).json({ 
+        success: true,
+        message: 'Login successful', 
+        token,
+        user: { id: user.id, username: user.username }
+      });  
   
       } catch (error) {
       console.error('Error loggin in user:', error);
-      res.status(500).json({ message: 'Internal server error', error})
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error'
+        });
       }
     },
 
