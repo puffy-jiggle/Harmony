@@ -7,37 +7,82 @@ const UserVoice: React.FC = () => {
   const [generationStatus, setGenStatus] = useState<string | null>(null);
   const [genURL, setGenURL] = useState<string>('');
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Check login status on component mount
   useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    setIsLoggedIn(!!token);
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem('jwtToken');
+      console.log('Current token:', token); // Debug log
+      if (token) {
+        try {
+          // Optional: Basic token validation
+          const tokenParts = token.split('.');
+          if (tokenParts.length !== 3) {
+            console.log('Invalid token structure');
+            localStorage.removeItem('jwtToken');
+            setIsLoggedIn(false);
+            return;
+          }
+          setIsLoggedIn(true);
+        } catch (error) {
+          console.error('Token validation error:', error);
+          setIsLoggedIn(false);
+        }
+      } else {
+        console.log('No token found');
+        setIsLoggedIn(false);
+      }
+    };
+    // Check login status and set up interval
+    checkLoginStatus();
+    const interval = setInterval(checkLoginStatus, 60000); // Check every minute
+
+    return () => clearInterval(interval);
   }, []);
 
   const saveGeneratedAudio = async () => {
+    if (!audioURL || !genURL) {
+      console.error('No audio URLs to save');
+      return;
+    }
+    
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('jwtToken');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+  
+      // Make sure to include Authorization header
       const response = await fetch('http://localhost:4040/api/save-audio', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}` // Add this line
         },
         body: JSON.stringify({
           originalUrl: audioURL,
           transformedUrl: genURL
         })
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to save audio');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save audio');
       }
-
-      // Show success message or update UI
-      alert('Audio saved successfully!');
+  
+      const result = await response.json();
+      console.log('Save successful:', result);
+      // Maybe add some user feedback here
+      // setSuccessMessage('Audio saved successfully!');
+  
     } catch (error) {
       console.error('Error saving audio:', error);
-      alert('Failed to save audio');
+      // Maybe add some user feedback here
+      // setErrorMessage(error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -51,30 +96,40 @@ const UserVoice: React.FC = () => {
     }
   };
 
-  const fileUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setGenStatus('loading');
+const fileUpload = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  e.preventDefault();
+  setGenStatus('loading');
 
+  try {
     const formData = new FormData();
-    if (audioFile) {
-      formData.append('file', audioFile);
-    }
+    if (audioFile) formData.append('file', audioFile);
 
-    fetch('http://localhost:4040/api/upload', {
+    const response = await fetch('http://localhost:4040/api/upload', {
       method: 'POST',
       body: formData,
-    })
-      .then((res) => res.blob())
-      .then((blob) => {
-        setGenURL(URL.createObjectURL(blob));
-        console.log(genURL)
-        setGenStatus('done');
-      })
-      .catch((err) => console.error('Error occurred', err));
-  };
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    setGenURL(url);
+    setGenStatus('done');
+
+  } catch (err) {
+    console.error('Error:', err);
+    setGenStatus('error');
+  }
+};
 
   return (
     <div className='card shadow-xl bg-base-100 p-4 mt-4'>
+      {(() => {
+        console.log('Render state:', { isLoggedIn, generationStatus });
+        return null;
+      })()}   
       <h2 className='card-title'>Your Voice</h2>
       <input
         type='file'
@@ -94,12 +149,13 @@ const UserVoice: React.FC = () => {
       {generationStatus === 'done' ? (
         <>
           <AudioPlayer audioURL={genURL} />
-          {isLoggedIn && (
+          {isLoggedIn && generationStatus === 'done' && (
             <button 
-              className='btn btn-secondary mt-2'
+              className={`btn btn-secondary mt-2 ${isSaving ? 'loading' : ''}`}
               onClick={saveGeneratedAudio}
+              disabled={isSaving}
             >
-              Save this version
+              {isSaving ? 'Saving...' : 'Save this version'}
             </button>
           )}
         </>

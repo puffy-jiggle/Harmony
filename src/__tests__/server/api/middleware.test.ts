@@ -1,6 +1,6 @@
 // src/__tests__/server/api/middleware.test.ts
 import { Request, Response, NextFunction } from 'express';
-import testMiddleware from '../../../server/controller/testMiddleware';
+import testMiddleware from '../../../server/controller/audioMiddleware';
 
 // 1. Basic unit tests for middleware functions
 // 2. Tests error handling and basic functionality
