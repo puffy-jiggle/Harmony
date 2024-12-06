@@ -12,6 +12,7 @@ import { JWTPayload } from '../types';
 const router = express.Router();
 
 import multer, {FileFilterCallback} from 'multer';
+import { verify } from 'crypto';
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
 
@@ -95,6 +96,7 @@ router.post('/save-audio',
 // });
 
 router.post('/upload', 
+  verifyToken,
   fileUpload.single('file'),
   audioController.upload
 ); 

@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { CustomError } from './types';
 import apiRouter from './routes/apiRouter';
+import { setupStorage } from './model/storage';
 
 const app = express();
 const PORT = 4040;
@@ -12,13 +13,6 @@ const PORT = 4040;
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
-
-
-
-// app.get('/test', (req: Request, res: Response) => {
-//   res.sendStatus(250)
-// })
-
 
 // API routes
 app.use('/api', apiRouter);
@@ -45,7 +39,22 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+// Initialize storage and start server
+const init = async () => {
+  try {
+    await setupStorage();
+    console.log('Storage buckets initialized successfully');
+    
+    app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to initialize storage buckets:', error);
+    process.exit(1);  // Exit if storage setup fails
+  }
+};
+
+init().catch(error => {
+  console.error('Server initialization failed:', error);
+  process.exit(1);
 });
