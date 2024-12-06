@@ -10,8 +10,12 @@ model_weights/*
 !model_weights/.gitkeep
 open_musiclm/laion_clap/630k-audioset-best.pt
 
-# Temporary files
+# Application data directories
 input/*
 !input/.gitkeep
 output/*
 !output/.gitkeep
+temp/
+!temp/.gitkeep
+saved_generations/
+!saved_generations/.gitkeep
