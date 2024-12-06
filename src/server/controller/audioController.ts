@@ -11,7 +11,7 @@ const audioController = {
     }
 
     try {
-      // Read the uploaded file
+      // Read uploaded file
       const audioFileHandle = await fs.open(req.file.path);
       const audioStream = await audioFileHandle.readFile();
       const audioFile = new File([audioStream], req.file.originalname, {
@@ -34,15 +34,12 @@ const audioController = {
         throw new Error(`ML service error: ${mlResponse.status}`);
       }
 
-      // Get the response as buffer and send it back
+      // Send back the transformed audio
       const responseBuffer = await mlResponse.arrayBuffer();
-      
-      // Send only one response
-      res.set('Content-Type', 'audio/wav');
-      return res.status(200).send(Buffer.from(responseBuffer));
-      // Remove the next() call since we've already sent a response
+      res.type('audio/wav');
+      res.status(200).send(Buffer.from(responseBuffer));
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error in upload:', error);
       next(error);
     }

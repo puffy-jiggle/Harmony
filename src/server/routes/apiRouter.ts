@@ -73,23 +73,26 @@ router.post('/test', audioMiddleware.testFunction, (req: Request, res: Response,
   res.status(200).send('response from api/test route');
 });
 
-// router.post('/save-audio', verifyToken, saveAudioHandler);
-
 router.post('/save-audio', 
   verifyToken, 
-  audioMiddleware.saveAudioPair, 
-  (req: Request, res: Response) => {
-    res.json({ 
-      success: true,
-      message: 'Audio pair saved successfully',
-      data: res.locals.audioSave
-    });
-  }
+  audioMiddleware.saveAudioPair
 );
 
-router.get('/audiotest', audioMiddleware.uploadAudioToSupabase, (req: Request, res: Response, next: NextFunction) => {
-  res.status(200).send('response from api/audiotest route');
-});
+// router.post('/save-audio', 
+//   verifyToken, 
+//   audioMiddleware.saveAudioPair, 
+//   (req: Request, res: Response) => {
+//     res.json({ 
+//       success: true,
+//       message: 'Audio pair saved successfully',
+//       data: res.locals.audioSave
+//     });
+//   }
+// );
+
+// router.get('/audiotest', audioMiddleware.uploadAudioToSupabase, (req: Request, res: Response, next: NextFunction) => {
+//   res.status(200).send('response from api/audiotest route');
+// });
 
 router.post('/upload', 
   fileUpload.single('file'),
@@ -102,9 +105,13 @@ router.post('/login', authController.login, (req: Request, res: Response, next: 
 
 router.post('/register', authController.register);
 
-router.get('/audio/:user_id', audioMiddleware.getUserAudio, (req: Request, res: Response, next: NextFunction) => {
-  res.status(200).send('response from ')
-});
+// router.get('/audio/:user_id', audioMiddleware.getUserAudio, (req: Request, res: Response, next: NextFunction) => {
+//   res.status(200).send('response from ')
+// });
+
+router.get('/audio/:user_id', 
+  audioMiddleware.getUserAudio
+);
 
 router.post('/save-audio', 
   verifyToken, 
