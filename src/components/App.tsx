@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom"; // Import Link for client-side navigation
 import UserVoice from "./UserVoice"
 
@@ -16,6 +16,17 @@ import UserVoice from "./UserVoice"
  * - Responsive by default through Tailwind classes
  */
 const App: React.FC = () => {
+  //State to store the logged-in username
+  const [username, setUsername] = useState<string | null>(null);
+
+  //Simulate checking the user's login status
+  useEffect(()=> {
+    const user = localStorage.getItem("username")
+
+    if (user) {
+      setUsername(user);
+    }
+  },[])
   return (
     // Container div with full viewport height and centered content
     <div className="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -25,6 +36,13 @@ const App: React.FC = () => {
         <h1 className="text-4xl font-bold text-blue-600 mb-4">Hello My Melody!</h1>
         
         {/* DaisyUI button examples showing different styles */}
+        {username ? (
+          <p className="text-lg text-green-700 mb-4">Hi, {username}!</p>
+        ) : (
+          <p className="text-lg text-red-600 mb-4">You are not logged in. <Link to="/login" className="text-blue-500 hover:underline">
+          Login
+        </Link></p>
+        )}
         <button className="btn btn-primary">Primary Button</button>
         <button className="btn btn-secondary">Secondary Button</button>
         

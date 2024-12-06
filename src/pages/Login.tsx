@@ -42,6 +42,8 @@ const Login: React.FC = () => {
 
       //Store JWT token in localStorage
       localStorage.setItem('jwtToken', responseData.token)
+      localStorage.setItem('username', data.userName)
+
       setIsLoggedIn(true);
       setErrorMessage(null);
       navigate('/')
@@ -62,6 +64,7 @@ const Login: React.FC = () => {
   const handleLogout = () => {
     // Remove the JWT token from localStorage
     localStorage.removeItem('jwtToken');
+    localStorage.removeItem('username')
     setIsLoggedIn(false);
   }
 
