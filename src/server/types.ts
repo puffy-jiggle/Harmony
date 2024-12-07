@@ -58,3 +58,39 @@ export interface TransformResponse {
     transformedUrl: string;
   };
 }
+
+// Existing types from your types.ts remain unchanged
+// Add these new interfaces:
+
+export interface AudioPair {
+  original_id: number;
+  original_url: string;
+  transformed_url: string;
+  created_at: string;
+}
+
+export interface NavigationProps {
+  isLoggedIn?: boolean;
+  onLogout?: () => void;
+}
+
+export interface MainLayoutProps {
+  children: React.ReactNode;
+}
+
+export interface AudioPlayerProps {
+  audioURL: string;
+}
+
+// Add these to your existing types.ts
+export interface AudioPair {
+  original_id: number;
+  original_url: string;
+  transformed_url: string;
+  created_at: string;
+}
+
+export interface NavigationProps {
+  isLoggedIn?: boolean;
+  onLogout?: () => void;
+}

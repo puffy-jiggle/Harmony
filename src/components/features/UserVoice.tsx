@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AudioPlayer from './AudioPlayer';
-import AudioRecorder from './AudioRecorder';
+import AudioPlayer from '../core/AudioPlayer';
+import AudioRecorder from '../core/AudioRecorder';
 
 interface UploadResponse {
   success: boolean;
@@ -137,6 +137,14 @@ const UserVoice: React.FC = () => {
       {/* Audio recorder for live recordings */}
       <AudioRecorder setAudioURL={setLocalAudioURL} setAudioFile={setAudioFile} />
 
+      {/* Show original audio player when available */}
+      {localAudioURL && (
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold">Original Audio:</h3>
+          <AudioPlayer audioURL={localAudioURL} />
+        </div>
+      )}
+
       {/* Upload and transform button */}
       <button
         className="btn btn-primary mt-2"
@@ -157,10 +165,6 @@ const UserVoice: React.FC = () => {
       {/* Show audio players after processing */}
       {generationStatus === 'done' && (
         <>
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold">Original Audio:</h3>
-            <AudioPlayer audioURL={localAudioURL} />
-          </div>
           <div className="mt-4">
             <h3 className="text-lg font-semibold">Transformed Audio:</h3>
             <AudioPlayer audioURL={localTransformedURL} />
