@@ -30,7 +30,7 @@ if (process.env.NODE_ENV === 'production') {
 app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';
-  console.error(`[Error] ${message}`);
+  console.error(`[Error] ${typeof message === 'string' ? message : message.err}`);
 
   res.status(status).json({
     status: 'error',
