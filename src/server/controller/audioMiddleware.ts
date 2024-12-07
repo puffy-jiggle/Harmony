@@ -8,8 +8,7 @@ const audioMiddleware = {
   saveAudioPair: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { originalUrl, transformedUrl } = req.body;
-      
-      // Validation
+  
       if (!originalUrl || !transformedUrl) {
         const err: CustomError = {
           log: 'Missing audio URLs in request',
@@ -18,7 +17,7 @@ const audioMiddleware = {
         };
         return next(err);
       }
-      
+  
       if (!req.user) {
         const err: CustomError = {
           log: 'User not authenticated',
@@ -27,11 +26,11 @@ const audioMiddleware = {
         };
         return next(err);
       }
-
+  
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-
+  
         // Save original audio URL
         const originalResult = await client.query(
           `INSERT INTO audio (user_id, "audioURL", file_type, is_saved)
@@ -39,24 +38,23 @@ const audioMiddleware = {
            RETURNING id`,
           [req.user.id, originalUrl]
         );
-
+  
         // Save transformed audio URL with reference to original
         await client.query(
           `INSERT INTO audio (user_id, "audioURL", file_type, is_saved, pair_id)
            VALUES ($1, $2, 'transformed', true, $3)`,
           [req.user.id, transformedUrl, originalResult.rows[0].id]
         );
-
+  
         await client.query('COMMIT');
-        
+  
         res.locals.audioSave = {
           originalUrl,
           transformedUrl,
           userId: req.user.id
         };
-
-        return next();
-
+  
+        next();
       } catch (error) {
         await client.query('ROLLBACK');
         throw error;
@@ -72,6 +70,7 @@ const audioMiddleware = {
       };
       next(err);
     }
+  
   },
 
   // Get user's saved audio pairs

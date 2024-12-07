@@ -99,3 +99,18 @@ export const deleteAudio = async (
     } as CustomError;
   }
 };
+
+export const generateSignedUrl = async (bucketName: string, filePath: string): Promise<string> => {
+    const { data, error } = await supabase
+      .storage
+      .from(bucketName)
+      .createSignedUrl(filePath, 60 * 10); // 10 minutes expiration
+  
+    if (error) {
+      console.error('Error generating signed URL:', error);
+      throw new Error('Failed to generate signed URL');
+    }
+  
+    return data.signedUrl;
+  };
+  
