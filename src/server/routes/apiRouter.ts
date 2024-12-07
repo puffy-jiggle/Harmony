@@ -1,4 +1,3 @@
-// Import and configuration 
 import express from 'express';
 import { Request, Response, NextFunction } from "express";
 import audioMiddleware from '../controller/audioMiddleware';
@@ -6,56 +5,49 @@ import audioController from '../controller/audioController';
 import authController from '../controller/authController';
 import path from 'path';
 import jwt from 'jsonwebtoken';
-import pool from '../model/db';
-import { JWTPayload } from '../types'; 
+import { JWTPayload } from '../types';
+import multer from 'multer';
 
 const router = express.Router();
 
-import multer, {FileFilterCallback} from 'multer';
-type DestinationCallback = (error: Error | null, destination: string) => void
-type FileNameCallback = (error: Error | null, filename: string) => void
-
-// Middleware setup 
+// Multer storage configuration
 const multerStorage = multer.diskStorage({
-  filename: function (req: Request, file: Express.Multer.File, cb: FileNameCallback){
-    cb(null, file.originalname)
+  filename: (
+    req: Request, 
+    file: Express.Multer.File, 
+    cb: (error: Error | null, filename: string) => void
+  ) => {
+    cb(null, `${Date.now()}_${file.originalname}`);
   },
-  destination: function (req: Request, file: Express.Multer.File, cb: DestinationCallback){
-    cb(null, path.resolve(__dirname, "../uploads"))
+  destination: (
+    req: Request, 
+    file: Express.Multer.File, 
+    cb: (error: Error | null, destination: string) => void
+  ) => {
+    cb(null, path.resolve(__dirname, "../uploads"));
   }
-})
-const fileUpload = multer({storage: multerStorage})
+});
+
+const fileUpload = multer({ storage: multerStorage });
 
 // JWT verification middleware
-// const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-//   const authHeader = req.headers.authorization;
-//   if (!authHeader) {
-//     return res.status(401).json({ error: 'No token provided' });
-//   }
-
-//   const token = authHeader.split(' ')[1]; // Bearer <token>
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY || 'your_secret_key');
-//     req.user = decoded;
-//     next();
-//   } catch (error) {
-//     return res.status(401).json({ error: 'Invalid token' });
-//   }
-// };
-
 const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   console.log('Auth header:', req.headers.authorization);
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    console.log('No auth header fond');
+    console.log('No auth header found');
     return res.status(401).json({ error: 'No token provided' });
   }
 
   const token = authHeader.split(' ')[1]; // Bearer <token>
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY || 'your_secret_key') as JWTPayload;
-    console.log('Decoded token: ', decoded);
+    const decoded = jwt.verify(
+      token, 
+      process.env.JWT_SECRET_KEY || 'your_secret_key'
+    ) as JWTPayload;
+    
+    console.log('Decoded token:', decoded);
     req.user = decoded;
     next();
   } catch (error) {
@@ -64,65 +56,81 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// Existing routes
-router.get('/test', audioMiddleware.testFunction, (req: Request, res: Response, next: NextFunction) => {
-  res.status(200).send('response from api/test route');
-});
-
-router.post('/test', audioMiddleware.testFunction, (req: Request, res: Response, next: NextFunction) => {
-  res.status(200).send('response from api/test route');
-});
-
-router.post('/save-audio', 
-  verifyToken, 
-  audioMiddleware.saveAudioPair
-);
-
-// router.post('/save-audio', 
-//   verifyToken, 
-//   audioMiddleware.saveAudioPair, 
-//   (req: Request, res: Response) => {
-//     res.json({ 
-//       success: true,
-//       message: 'Audio pair saved successfully',
-//       data: res.locals.audioSave
-//     });
-//   }
-// );
-
-// router.get('/audiotest', audioMiddleware.uploadAudioToSupabase, (req: Request, res: Response, next: NextFunction) => {
-//   res.status(200).send('response from api/audiotest route');
-// });
-
-router.post('/upload', 
-  fileUpload.single('file'),
-  audioController.upload
-); 
-
-router.post('/login', authController.login, (req: Request, res: Response, next: NextFunction) => {
-  res.status(200).send('response from api/login route')
-});
-
+// Auth routes
+router.post('/login', authController.login);
 router.post('/register', authController.register);
 
-// router.get('/audio/:user_id', audioMiddleware.getUserAudio, (req: Request, res: Response, next: NextFunction) => {
-//   res.status(200).send('response from ')
-// });
+// Public audio route - no auth required
+router.post('/transform',
+  fileUpload.single('file'),
+  audioController.transform
+);
 
-router.get('/audio/:user_id', 
+// Protected audio routes - auth required
+router.post('/upload',
+  verifyToken,
+  fileUpload.fields([
+    { name: 'originalFile', maxCount: 1 },
+    { name: 'transformedFile', maxCount: 1 }
+  ]),
+  audioController.upload
+);
+
+router.post('/save-audio',
+  verifyToken,
+  fileUpload.fields([
+    { name: 'originalFile', maxCount: 1 },
+    { name: 'transformedFile', maxCount: 1 }
+  ]),
+  (req: Request, res: Response, next: NextFunction) => {
+    console.log('Save-audio endpoint hit');
+    console.log('Files received:', req.files);
+
+    const files = req.files as { 
+      originalFile?: Express.Multer.File[], 
+      transformedFile?: Express.Multer.File[] 
+    };
+
+    if (files?.originalFile?.[0]) {
+      console.log('Original file path:', files.originalFile[0].path);
+    } else {
+      console.error('Original file is missing');
+    }
+
+    if (files?.transformedFile?.[0]) {
+      console.log('Transformed file path:', files.transformedFile[0].path);
+    } else {
+      console.error('Transformed file is missing');
+    }
+
+    console.log('Body received:', req.body);
+    console.log('User:', req.user);
+    next();
+  },
+  audioMiddleware.saveAudioPair,
+  (req: Request, res: Response) => {
+    res.json({
+      success: true,
+      message: 'Audio pair saved successfully',
+      data: res.locals.audioSave,
+    });
+  }
+);
+
+
+
+
+
+router.get('/audio/:user_id',
+  verifyToken,
   audioMiddleware.getUserAudio
 );
 
-router.post('/save-audio', 
-  verifyToken, 
-  audioMiddleware.saveAudioPair, 
-  (req: Request, res: Response) => {
-    res.json({ 
-      success: true,
-      message: 'Audio pair saved successfully',
-      data: res.locals.audioSave
-    });
-  }
+// Keep existing routes for backward compatibility
+router.post('/upload-legacy',
+  verifyToken,
+  fileUpload.single('file'),
+  audioController.upload
 );
 
 export default router;

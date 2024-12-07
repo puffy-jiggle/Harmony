@@ -1,78 +1,132 @@
 import { Request, Response, NextFunction } from "express";
 import { supabase } from '../model/db';
 import pool from "../model/db";
+import { CustomError, AudioStorageResponse } from '../types';
 
 const audioMiddleware = {
-  // Basic test function
-  testFunction: async (req: Request, res: Response, next: NextFunction) => {
-    console.log('testFunction is hit');
-    console.log('request headers', req.headers);
-    setTimeout(()=>{console.log('request body', req.body);}, 1000);
-    return next();
-  },
-
   // Save audio URLs to database
   saveAudioPair: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log('SaveAudioPair middleware hit');
+      console.log('Request Body:', req.body);
+      console.log('Files:', req.files);
+      console.log('User:', req.user);
+  
+      // Extract URLs from the request body
       const { originalUrl, transformedUrl } = req.body;
+  
+      // Validation: Ensure URLs are provided
       if (!originalUrl || !transformedUrl) {
-        return res.status(400).json({ error: 'Missing audio URLs' });
+        const err: CustomError = {
+          log: 'Missing audio URLs in request',
+          status: 400,
+          message: { err: 'Missing audio URLs' },
+        };
+        console.error('Validation error:', err);
+        return next(err); // Close the if block before continuing
       }
-      
-      if (!req.user) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
+  
       const client = await pool.connect();
       try {
+        console.log('Saving original and transformed URLs to the database...');
         await client.query('BEGIN');
-
-        // Save original audio URL
+  
+        // Insert the original audio URL into the database
         const originalResult = await client.query(
           `INSERT INTO audio (user_id, "audioURL", file_type, is_saved)
            VALUES ($1, $2, 'original', true)
            RETURNING id`,
-          [req.user.id, originalUrl]
+          [req.user?.id, originalUrl]
         );
-
-        // Save transformed audio URL with reference to original
+        console.log('Original audio database entry:', originalResult.rows[0]);
+  
+        // Insert the transformed audio URL into the database, linking it to the original
         await client.query(
           `INSERT INTO audio (user_id, "audioURL", file_type, is_saved, pair_id)
            VALUES ($1, $2, 'transformed', true, $3)`,
-          [req.user.id, transformedUrl, originalResult.rows[0].id]
+          [req.user?.id, transformedUrl, originalResult.rows[0].id]
         );
-
+  
         await client.query('COMMIT');
-        res.json({ success: true });
-
-      } catch (error) {
+        console.log('Database transaction committed');
+  
+        // Add response data to `res.locals`
+        res.locals.audioSave = { 
+          originalUrl, 
+          transformedUrl, 
+          userId: req.user?.id 
+        };
+  
+        next();
+      } catch (dbError) {
+        console.error('Database transaction error:', dbError);
         await client.query('ROLLBACK');
-        throw error;
+        next(dbError);
       } finally {
         client.release();
       }
     } catch (error) {
-      console.error('Error saving audio:', error);
-      res.status(500).json({ error: 'Failed to save audio' });
+      console.error(
+        'Error in saveAudioPair:',
+        error instanceof Error ? { message: error.message, stack: error.stack } : error
+      );
+  
+      const err: CustomError = {
+        log: 'Error in saveAudioPair middleware',
+        status: 500,
+        message: { err: 'Failed to save audio' },
+      };
+      next(err);
     }
   },
+  
+  
 
-  // Get user's saved audio
-  getUserAudio: async (req: Request, res: Response) => {
+  // Get user's saved audio pairs
+  getUserAudio: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.params.user_id) {
+        const err: CustomError = {
+          log: 'No user_id provided',
+          status: 400,
+          message: { err: 'User ID is required' }
+        };
+        return next(err);
+      }
+
       const client = await pool.connect();
-      const result = await client.query(
-        'SELECT * FROM audio WHERE user_id = $1',
-        [req.params.user_id]
-      );
-      
-      res.json({ audioFiles: result.rows });
-      client.release();
+      try {
+        const result = await client.query(
+          `SELECT 
+            o.id as original_id,
+            o."audioURL" as original_url,
+            t."audioURL" as transformed_url,
+            o.created_at
+           FROM audio o
+           LEFT JOIN audio t ON o.id = t.pair_id
+           WHERE o.user_id = $1
+           AND o.file_type = 'original'
+           ORDER BY o.created_at DESC`,
+          [req.params.user_id]
+        );
+        
+        res.json({ 
+          success: true,
+          data: result.rows 
+        });
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Error fetching audio:', error);
-      res.status(500).json({ error: 'Failed to fetch audio' });
+      const err: CustomError = {
+        log: 'Error in getUserAudio middleware',
+        status: 500,
+        message: { err: 'Failed to fetch audio' }
+      };
+      next(err);
     }
   }
-};
+}
 
 export default audioMiddleware;
