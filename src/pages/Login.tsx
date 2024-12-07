@@ -13,15 +13,11 @@ const Login: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
-
-
-
-  // Form submit handler
   const onSubmit: SubmitHandler<FormInput> = async (data) => {
-    console.log('data check', data);
+    setErrorMessage(null); // Clear any previous errors
+    console.log('Attempting login for: ', data.userName);
 
     try {
-      // Send a POST request with the form data
       const response = await fetch('http://localhost:4040/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -31,25 +27,31 @@ const Login: React.FC = () => {
         }),
       });
 
-      console.log('response', response)
-      // Handle response
+      const responseData = await response.json();
+      console.log('Login response:', responseData);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        setErrorMessage(responseData.message || 'Login failed');
+        return;
       }
       
-      const responseData = await response.json()
-      console.log('Login successful:', responseData);
+      if (!responseData.token) {
+        setErrorMessage('No authentication token received');
+        return;
+      }
 
       //Store JWT token in localStorage
       localStorage.setItem('jwtToken', responseData.token)
       localStorage.setItem('username', data.userName)
+      
 
       setIsLoggedIn(true);
       setErrorMessage(null);
-      navigate('/')
+      navigate('/');
+      
     } catch (error) {
-      console.error('Login failed:', error);
-      setErrorMessage('Login failed!');
+      console.error('Login error:', error);
+      setErrorMessage('Connection error. Please try again.');
     }
   };
 
@@ -74,6 +76,12 @@ const Login: React.FC = () => {
         <h1 className="text-2xl font-semibold text-center text-gray-700 mb-6">
           {isLoggedIn ? 'Welcome back!' : 'Hello, Welcome!'}
         </h1>
+
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {errorMessage}
+          </div>
+        )}
 
         {isLoggedIn ? (
           // If logged in, show a welcome message and logout button
