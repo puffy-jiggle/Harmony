@@ -7,14 +7,15 @@ public/bundle.js
 public/bundle.js.LICENSE.txt 
 public/bundle.js.map  
 public/output.css     
-ml_service/output/   
 
 # Environment variables
 .env
 
 # Logs and Temporary Files 
 *.log                 
-*.tmp                
+*.tmp    
+
+src/server/uploads/*.wav
 
 # System and IDE Files 
 .DS_Store             
