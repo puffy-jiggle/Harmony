@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import UserVoice from "../features/UserVoice";
 import Navigation from "../core/Navigation";
@@ -17,6 +17,17 @@ import Navigation from "../core/Navigation";
  * - Responsive by default through Tailwind classes
  */
 const App: React.FC = () => {
+    //State to store the logged-in username
+    const [username, setUsername] = useState<string | null>(null);
+
+    //Simulate checking the user's login status
+    useEffect(()=> {
+      const user = localStorage.getItem("username")
+  
+      if (user) {
+        setUsername(user);
+      }
+    },[])
   return (
     <div className="bg-base-200 min-h-screen flex flex-col">
       {/* Navigation bar */}
@@ -27,7 +38,13 @@ const App: React.FC = () => {
         <div className="text-center">
           {/* Main heading with Tailwind's typography and spacing classes */}
           <h1 className="text-4xl font-bold text-primary mb-4">Create Your Harmony</h1>
-          
+          {username ? (
+          <p className="text-lg text-green-700 mb-4">Hi, {username}!</p>
+        ) : (
+          <p className="text-lg text-red-600 mb-4">You are not logged in. <Link to="/login" className="text-blue-500 hover:underline">
+          Login
+        </Link></p>
+        )}
           {/* Main recording interface */}
           <UserVoice />
 
