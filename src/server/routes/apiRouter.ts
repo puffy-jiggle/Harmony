@@ -80,6 +80,10 @@ router.post('/login', authController.login, (req: Request, res: Response, next: 
   res.status(200).send('response from api/login route')
 });
 
+router.post('/google-login', authController.googleLogin, (req: Request, res: Response, next: NextFunction) => {
+  res.status(200).send('response from api/google-login route')
+});
+
 router.post('/register', authController.register);
 
 router.get('/audio/:user_id', testMiddleware.getUserAudio, (req: Request, res: Response, next: NextFunction) => {

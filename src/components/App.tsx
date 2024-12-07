@@ -18,15 +18,17 @@ import UserVoice from "./UserVoice"
 const App: React.FC = () => {
   //State to store the logged-in username
   const [username, setUsername] = useState<string | null>(null);
-
+  
   //Simulate checking the user's login status
   useEffect(()=> {
     const user = localStorage.getItem("username")
-
+    console.log('user', user)
     if (user) {
       setUsername(user);
     }
   },[])
+
+
   return (
     // Container div with full viewport height and centered content
     <div className="bg-gray-100 flex items-center justify-center min-h-screen">
