@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AudioPlayer from './AudioPlayer';
+import AudioRecorder from './AudioRecorder';
 
 const UserVoice: React.FC = () => {
   const [audioFile, setAudioFile] = useState<null | File>(null);
@@ -45,7 +46,6 @@ const UserVoice: React.FC = () => {
       const url = URL.createObjectURL(blob);
       setGenURL(url);
       setGenStatus('done');
-
     } catch (err) {
       console.error('Error:', err);
       setGenStatus('error');
@@ -58,7 +58,7 @@ const UserVoice: React.FC = () => {
       console.error('No audio URLs to save');
       return;
     }
-    
+
     setIsSaving(true);
     try {
       const token = localStorage.getItem('jwtToken');
@@ -70,12 +70,12 @@ const UserVoice: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           originalUrl: audioURL,
-          transformedUrl: genURL
-        })
+          transformedUrl: genURL,
+        }),
       });
 
       if (!response.ok) {
@@ -98,9 +98,7 @@ const UserVoice: React.FC = () => {
         className='file-input file-input-bordered file-input-secondary w-full max-w-xs m-1'
         onChange={fileSelect}
       />
-      <div className='card-actions justify-end m-1'>
-        <button className='btn btn-circle btn-error'>record</button>
-      </div>
+      <AudioRecorder setAudioURL={setAudioURL} setAudioFile={setAudioFile} />
       <AudioPlayer audioURL={audioURL} />
       <button className='btn btn-primary' onClick={fileUpload}>
         upload
@@ -112,7 +110,7 @@ const UserVoice: React.FC = () => {
         <>
           <AudioPlayer audioURL={genURL} />
           {isLoggedIn && (
-            <button 
+            <button
               className={`btn btn-secondary mt-2 ${isSaving ? 'loading' : ''}`}
               onClick={saveGeneratedAudio}
               disabled={isSaving}
