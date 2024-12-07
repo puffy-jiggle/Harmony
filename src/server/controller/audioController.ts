@@ -1,159 +1,159 @@
 /**
  * Audio Controller
- * Handles file upload, storage, and ML service integration
+ * Handles file transformation and storage with detailed logging
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { uploadAudio } from '../model/storage';
+import { uploadAudio, generateSignedUrl } from '../model/storage';
+import { supabase } from '../model/db';
 import pool from '../model/db';
 import * as fs from 'node:fs/promises';
-import { CustomError, AudioStorageResponse } from '../types';
-import { generateSignedUrl } from '../model/storage';
-import { supabase } from '../model/db';
+import { CustomError, AudioStorageResponse, TransformResponse } from '../types';
 
 const audioController = {
-  upload: async (req: Request, res: Response, next: NextFunction) => {
-    console.log('Upload endpoint hit');
+  // Transform audio - no auth required
+  transform: async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Transform endpoint hit');
     console.log('Request file:', req.file);
-    console.log('Request user:', req.user);
-
-    if (!req.file || !req.user) {
+  
+    if (!req.file) {
       const err: CustomError = {
-        log: 'Validation failed in upload',
+        log: 'No file uploaded for transformation',
         status: 400,
-        message: { err: 'No file uploaded or user not authenticated' }
+        message: { err: 'No file uploaded' },
       };
       return next(err);
     }
-
+  
     try {
       // Read uploaded file
       console.log('Reading file from:', req.file.path);
       const fileContent = await fs.readFile(req.file.path);
       console.log('File read successfully, size:', fileContent.length);
-
-      // Upload original to Supabase
-      console.log('Uploading original file...');
-      const originalUrl = await uploadAudio({
-        fileContent,
-        fileName: req.file.originalname,
-        contentType: req.file.mimetype,
-        userId: req.user.id.toString(),
-        bucketName: 'original-audio'
-      });
-
-      // Prepare ML service request
+  
+      // Send to ML service
       console.log('Sending to ML service...');
       const formData = new FormData();
-      formData.append('audio_file', new File([fileContent], req.file.originalname, {
-        type: req.file.mimetype
-      }));
-
+      formData.append(
+        'audio_file',
+        new File([fileContent], req.file.originalname, {
+          type: req.file.mimetype,
+        })
+      );
+  
       const mlResponse = await fetch('http://localhost:8000/generate', {
         method: 'POST',
-        body: formData
+        body: formData,
       });
-
+  
       if (!mlResponse.ok) {
+        console.error('ML service error:', mlResponse.status);
         throw new Error(`ML service error: ${mlResponse.status}`);
       }
-
-// Process transformed audio
-console.log('Processing transformed audio...');
-const transformedBuffer = Buffer.from(await mlResponse.arrayBuffer());
-const transformedFileName = `transformed_${req.file.originalname}`;
-const filePath = `${req.user.id}/${transformedFileName}`;
-
-console.log('Uploading transformed file to Supabase...');
-const { data: uploadData, error: uploadError } = await supabase.storage
-  .from('transformed-audio')
-  .upload(filePath, transformedBuffer, { contentType: 'audio/wav', upsert: true });
-
-if (uploadError) {
-  console.error('Error during upload:', uploadError.message);
-  throw new Error(`Upload failed: ${uploadError.message}`);
-} else {
-  console.log('Upload successful. Path in bucket:', uploadData?.path);
-}
-
-// Generate signed URL
-console.log('Generating signed URL for transformed file...');
-const signedTransformedUrl = await generateSignedUrl('transformed-audio', filePath);
-
-if (!signedTransformedUrl) {
-  console.error('Failed to generate signed URL for path:', filePath);
-  throw new Error('Signed URL generation failed.');
-} else {
-  console.log('Generated signed URL:', signedTransformedUrl);
-}
-
-// Save URLs to the database
-console.log('Storing URLs in the database...');
-const client = await pool.connect();
-try {
-  await client.query('BEGIN');
-
-  // Save original audio URL
-  const originalResult = await client.query(
-    `INSERT INTO audio (user_id, "audioURL", file_type, is_saved)
-     VALUES ($1, $2, 'original', true)
-     RETURNING id`,
-    [req.user.id, originalUrl]
-  );
-
-  // Save transformed audio URL with reference to original
-  await client.query(
-    `INSERT INTO audio (user_id, "audioURL", file_type, is_saved, pair_id)
-     VALUES ($1, $2, 'transformed', true, $3)`,
-    [req.user.id, signedTransformedUrl, originalResult.rows[0].id]
-  );
-
-  await client.query('COMMIT');
-
-  // Send response
-  const response: AudioStorageResponse = {
-    originalUrl,
-    transformedUrl: signedTransformedUrl
-  };
-
-  res.json({
-    success: true,
-    data: response
-  });
-
-} catch (error) {
-  await client.query('ROLLBACK');
-  console.error('Database error:', error);
-  throw error;
-} finally {
-  client.release();
-}
-
-
-
-
+  
+      // Send transformed audio directly back to client
+      const transformedBuffer = Buffer.from(await mlResponse.arrayBuffer());
+      console.log('Transformed audio size:', transformedBuffer.length);
+  
+      res.set('Content-Type', 'audio/wav');
+      res.send(transformedBuffer);
     } catch (error) {
-      console.error('Error in upload:', error instanceof Error ? {
-        message: error.message,
-        stack: error.stack
-      } : error);
-
+      console.error('Error in transform:', 
+        error instanceof Error ? { message: error.message, stack: error.stack } : error
+      );
+    
       const err: CustomError = {
-        log: `Audio processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        log: `Audio transformation failed: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
         status: 500,
-        message: { err: 'Audio processing failed' }
+        message: { err: 'Audio transformation failed' },
       };
       next(err);
-
-    } finally {
+    }
+    
+      finally {
       // Clean up temp file
       if (req.file?.path) {
         console.log('Cleaning up temp file:', req.file.path);
-        await fs.unlink(req.file.path)
-          .catch(err => console.error('Temp file cleanup error:', err));
+        await fs.unlink(req.file.path).catch((err) =>
+          console.error('Temp file cleanup error:', err)
+        );
       }
     }
-  }
+  },
+  
+  // Upload and save to Supabase - auth required
+  upload: async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Upload request body:', req.body);
+    console.log('Upload files received:', req.files);
+    console.log('Request user:', req.user);
+  
+    if (!req.files || !req.user) {
+      const err: CustomError = {
+        log: 'Validation failed in upload',
+        status: 400,
+        message: { err: 'No files uploaded or user not authenticated' }
+      };
+      return next(err);
+    }
+  
+    const files = req.files as {
+      originalFile: Express.Multer.File[];
+      transformedFile: Express.Multer.File[];
+    };
+  
+    try {
+      // Upload original file
+      const originalFilePath = `${req.user.id}/${Date.now()}_${files.originalFile[0].originalname}`;
+      const { error: originalError } = await supabase.storage
+        .from('original-audio')
+        .upload(originalFilePath, await fs.readFile(files.originalFile[0].path), {
+          contentType: files.originalFile[0].mimetype,
+        });
+  
+      if (originalError) throw originalError;
+  
+      const originalUrl = await generateSignedUrl('original-audio', originalFilePath);
+  
+      // Upload transformed file
+      const transformedFilePath = `${req.user.id}/${Date.now()}_transformed_${files.transformedFile[0].originalname}`;
+      const { error: transformedError } = await supabase.storage
+        .from('transformed-audio')
+        .upload(transformedFilePath, await fs.readFile(files.transformedFile[0].path), {
+          contentType: 'audio/wav',
+        });
+  
+      if (transformedError) throw transformedError;
+  
+      const transformedUrl = await generateSignedUrl('transformed-audio', transformedFilePath);
+  
+      // Respond with URLs
+      res.json({
+        success: true,
+        data: {
+          originalUrl,
+          transformedUrl,
+        },
+      });
+    } catch (error) {
+      console.error('Error in upload:', error);
+      next(error);
+    } finally {
+      // Clean up files
+      if (files.originalFile?.[0]?.path) {
+        await fs.unlink(files.originalFile[0].path).catch((err) =>
+          console.error('Error cleaning original file:', err)
+        );
+      }
+      if (files.transformedFile?.[0]?.path) {
+        await fs.unlink(files.transformedFile[0].path).catch((err) =>
+          console.error('Error cleaning transformed file:', err)
+        );
+      }
+    }
+  },
 };
+  
 
 export default audioController;

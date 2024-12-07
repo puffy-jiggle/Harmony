@@ -7,71 +7,80 @@ const audioMiddleware = {
   // Save audio URLs to database
   saveAudioPair: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log('SaveAudioPair middleware hit');
+      console.log('Request Body:', req.body);
+      console.log('Files:', req.files);
+      console.log('User:', req.user);
+  
+      // Extract URLs from the request body
       const { originalUrl, transformedUrl } = req.body;
   
+      // Validation: Ensure URLs are provided
       if (!originalUrl || !transformedUrl) {
         const err: CustomError = {
           log: 'Missing audio URLs in request',
           status: 400,
-          message: { err: 'Missing audio URLs' }
+          message: { err: 'Missing audio URLs' },
         };
-        return next(err);
-      }
-  
-      if (!req.user) {
-        const err: CustomError = {
-          log: 'User not authenticated',
-          status: 401,
-          message: { err: 'User not authenticated' }
-        };
-        return next(err);
+        console.error('Validation error:', err);
+        return next(err); // Close the if block before continuing
       }
   
       const client = await pool.connect();
       try {
+        console.log('Saving original and transformed URLs to the database...');
         await client.query('BEGIN');
   
-        // Save original audio URL
+        // Insert the original audio URL into the database
         const originalResult = await client.query(
           `INSERT INTO audio (user_id, "audioURL", file_type, is_saved)
            VALUES ($1, $2, 'original', true)
            RETURNING id`,
-          [req.user.id, originalUrl]
+          [req.user?.id, originalUrl]
         );
+        console.log('Original audio database entry:', originalResult.rows[0]);
   
-        // Save transformed audio URL with reference to original
+        // Insert the transformed audio URL into the database, linking it to the original
         await client.query(
           `INSERT INTO audio (user_id, "audioURL", file_type, is_saved, pair_id)
            VALUES ($1, $2, 'transformed', true, $3)`,
-          [req.user.id, transformedUrl, originalResult.rows[0].id]
+          [req.user?.id, transformedUrl, originalResult.rows[0].id]
         );
   
         await client.query('COMMIT');
+        console.log('Database transaction committed');
   
-        res.locals.audioSave = {
-          originalUrl,
-          transformedUrl,
-          userId: req.user.id
+        // Add response data to `res.locals`
+        res.locals.audioSave = { 
+          originalUrl, 
+          transformedUrl, 
+          userId: req.user?.id 
         };
   
         next();
-      } catch (error) {
+      } catch (dbError) {
+        console.error('Database transaction error:', dbError);
         await client.query('ROLLBACK');
-        throw error;
+        next(dbError);
       } finally {
         client.release();
       }
     } catch (error) {
-      console.error('Error saving audio:', error);
+      console.error(
+        'Error in saveAudioPair:',
+        error instanceof Error ? { message: error.message, stack: error.stack } : error
+      );
+  
       const err: CustomError = {
         log: 'Error in saveAudioPair middleware',
         status: 500,
-        message: { err: 'Failed to save audio' }
+        message: { err: 'Failed to save audio' },
       };
       next(err);
     }
-  
   },
+  
+  
 
   // Get user's saved audio pairs
   getUserAudio: async (req: Request, res: Response, next: NextFunction) => {
@@ -118,6 +127,6 @@ const audioMiddleware = {
       next(err);
     }
   }
-};
+}
 
 export default audioMiddleware;

@@ -60,28 +60,77 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
 router.post('/login', authController.login);
 router.post('/register', authController.register);
 
-// Audio routes
+// Public audio route - no auth required
+router.post('/transform',
+  fileUpload.single('file'),
+  audioController.transform
+);
+
+// Protected audio routes - auth required
 router.post('/upload',
   verifyToken,
-  fileUpload.single('file'),
+  fileUpload.fields([
+    { name: 'originalFile', maxCount: 1 },
+    { name: 'transformedFile', maxCount: 1 }
+  ]),
   audioController.upload
 );
 
 router.post('/save-audio',
   verifyToken,
+  fileUpload.fields([
+    { name: 'originalFile', maxCount: 1 },
+    { name: 'transformedFile', maxCount: 1 }
+  ]),
+  (req: Request, res: Response, next: NextFunction) => {
+    console.log('Save-audio endpoint hit');
+    console.log('Files received:', req.files);
+
+    const files = req.files as { 
+      originalFile?: Express.Multer.File[], 
+      transformedFile?: Express.Multer.File[] 
+    };
+
+    if (files?.originalFile?.[0]) {
+      console.log('Original file path:', files.originalFile[0].path);
+    } else {
+      console.error('Original file is missing');
+    }
+
+    if (files?.transformedFile?.[0]) {
+      console.log('Transformed file path:', files.transformedFile[0].path);
+    } else {
+      console.error('Transformed file is missing');
+    }
+
+    console.log('Body received:', req.body);
+    console.log('User:', req.user);
+    next();
+  },
   audioMiddleware.saveAudioPair,
   (req: Request, res: Response) => {
     res.json({
       success: true,
       message: 'Audio pair saved successfully',
-      data: res.locals.audioSave
+      data: res.locals.audioSave,
     });
   }
 );
 
+
+
+
+
 router.get('/audio/:user_id',
-  verifyToken,  // Add auth check for getting audio
+  verifyToken,
   audioMiddleware.getUserAudio
+);
+
+// Keep existing routes for backward compatibility
+router.post('/upload-legacy',
+  verifyToken,
+  fileUpload.single('file'),
+  audioController.upload
 );
 
 export default router;

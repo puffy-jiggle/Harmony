@@ -49,3 +49,12 @@ declare global {
     }
   }
 }
+
+// Transform Types
+export interface TransformResponse {
+  success: boolean;
+  data: Buffer | {
+    originalUrl: string;
+    transformedUrl: string;
+  };
+}

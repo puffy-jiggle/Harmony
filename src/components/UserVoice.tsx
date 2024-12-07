@@ -10,15 +10,10 @@ interface UploadResponse {
 }
 
 const UserVoice: React.FC = () => {
-  // File state
   const [audioFile, setAudioFile] = useState<File | null>(null);
-  
-  // URL states
+  const [transformedFile, setTransformedFile] = useState<File | null>(null);
   const [localAudioURL, setLocalAudioURL] = useState<string>('');
-  const [supabaseAudioURL, setSupabaseAudioURL] = useState<string>('');
-  const [transformedURL, setTransformedURL] = useState<string>('');
-  
-  // UI states
+  const [localTransformedURL, setLocalTransformedURL] = useState<string>('');
   const [generationStatus, setGenStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -26,100 +21,101 @@ const UserVoice: React.FC = () => {
   useEffect(() => {
     const token = localStorage.getItem('jwtToken');
     setIsLoggedIn(!!token);
-    console.log('Login status:', !!token);
   }, []);
 
   const fileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      console.log('File selected:', file.name);
       setAudioFile(file);
-      const localURL = URL.createObjectURL(file);
-      setLocalAudioURL(localURL);
-      console.log('Local URL created:', localURL);
+      setLocalAudioURL(URL.createObjectURL(file));
     }
   };
 
   const fileUpload = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setGenStatus('loading');
-    console.log('Starting file upload process...');
 
     try {
-      const token = localStorage.getItem('jwtToken');
-      if (!token || !audioFile) {
-        console.error('No token or file found');
-        setGenStatus('error');
+      const formData = new FormData();
+      if (!audioFile) {
+        console.error('No file selected');
         return;
       }
-
-      const formData = new FormData();
       formData.append('file', audioFile);
 
-      console.log('Sending file to server...');
-      const response = await fetch('http://localhost:4040/api/upload', {
+      // No token required for transformation
+      const response = await fetch('http://localhost:4040/api/transform', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
+        throw new Error(`Transform failed: ${response.status}`);
       }
 
-      const data: UploadResponse = await response.json();
-      console.log('Server response:', data);
-
-      if (!data.success || !data.data) {
-        throw new Error('Invalid server response');
-      }
-
-      setSupabaseAudioURL(data.data.originalUrl);
-      setTransformedURL(data.data.transformedUrl);
-      console.log('URLs updated:', {
-        original: data.data.originalUrl,
-        transformed: data.data.transformedUrl
-      });
-
+      const blob = await response.blob();
+      const transformedURL = URL.createObjectURL(blob);
+      setLocalTransformedURL(transformedURL);
+      setTransformedFile(new File([blob], 'transformed.wav', { type: 'audio/wav' }));
       setGenStatus('done');
     } catch (err) {
-      console.error('Upload error:', err);
+      console.error('Error:', err);
       setGenStatus('error');
     }
   };
 
   const saveAudio = async () => {
-    if (!supabaseAudioURL || !transformedURL) {
-      console.error('No URLs to save');
-      return;
-    }
-
     setIsSaving(true);
+  
     try {
       const token = localStorage.getItem('jwtToken');
       if (!token) {
         throw new Error('Not authenticated');
       }
-
-      console.log('Saving audio pair...');
-      const response = await fetch('http://localhost:4040/api/save-audio', {
+  
+      const formData = new FormData();
+      if (!audioFile) throw new Error('Original audio file is missing');
+      formData.append('originalFile', audioFile);
+  
+      if (!localTransformedURL) throw new Error('Transformed audio URL is missing');
+      const transformedBlob = await fetch(localTransformedURL).then((r) => r.blob());
+      const transformedFile = new File([transformedBlob], 'transformed.wav', { type: 'audio/wav' });
+      formData.append('transformedFile', transformedFile);
+  
+      console.log('Sending files to upload:', { originalFile: audioFile, transformedFile });
+  
+      // Upload files to receive URLs
+      const uploadResponse = await fetch('http://localhost:4040/api/upload', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          originalUrl: supabaseAudioURL,
-          transformedUrl: transformedURL
-        })
+        body: formData,
       });
-
-      if (!response.ok) {
+  
+      if (!uploadResponse.ok) {
+        throw new Error('File upload failed');
+      }
+  
+      const uploadData = await uploadResponse.json();
+      const { originalUrl, transformedUrl } = uploadData.data;
+  
+      console.log('Received URLs from upload:', { originalUrl, transformedUrl });
+  
+      // Save audio pair
+      const saveResponse = await fetch('http://localhost:4040/api/save-audio', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ originalUrl, transformedUrl }),
+      });
+  
+      if (!saveResponse.ok) {
         throw new Error('Failed to save audio');
       }
-
+  
       console.log('Audio saved successfully');
     } catch (error) {
       console.error('Error saving audio:', error);
@@ -127,6 +123,9 @@ const UserVoice: React.FC = () => {
       setIsSaving(false);
     }
   };
+  
+  
+  
 
   return (
     <div className="card shadow-xl bg-base-100 p-4 mt-4">
@@ -154,18 +153,21 @@ const UserVoice: React.FC = () => {
 
       {generationStatus === 'done' && (
         <>
-          <h3>Original Audio:</h3>
-          <AudioPlayer audioURL={localAudioURL || supabaseAudioURL} />
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold">Original Audio:</h3>
+            <AudioPlayer audioURL={localAudioURL} />
+          </div>
           
-          <h3>Transformed Audio:</h3>
-          <AudioPlayer audioURL={transformedURL} />
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold">Transformed Audio:</h3>
+            <AudioPlayer audioURL={localTransformedURL} />
+          </div>
           
           {isLoggedIn && (
             <button 
-              className={`btn btn-secondary mt-2 ${isSaving ? 'loading' : ''}`}
+              className={`btn btn-secondary mt-4 ${isSaving ? 'loading' : ''}`}
               onClick={saveAudio}
-              disabled={isSaving || !transformedURL}
-              title={!isLoggedIn ? 'Log in to save audio' : ''}
+              disabled={isSaving}
             >
               {isSaving ? 'Saving...' : 'Save this version'}
             </button>
