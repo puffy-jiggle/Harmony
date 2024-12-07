@@ -166,10 +166,6 @@ const UserVoice: React.FC = () => {
       {generationStatus === 'done' && (
         <>
           <div className="mt-4">
-            <h3 className="text-lg font-semibold">Original Audio:</h3>
-            <AudioPlayer audioURL={localAudioURL} />
-          </div>
-          <div className="mt-4">
             <h3 className="text-lg font-semibold">Transformed Audio:</h3>
             <AudioPlayer audioURL={localTransformedURL} />
           </div>
