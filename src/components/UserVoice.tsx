@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AudioPlayer from './AudioPlayer';
+import AudioRecorder from './AudioRecorder';
 
 interface UploadResponse {
   success: boolean;
@@ -18,11 +19,13 @@ const UserVoice: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
+  // Check if the user is logged in
   useEffect(() => {
     const token = localStorage.getItem('jwtToken');
     setIsLoggedIn(!!token);
   }, []);
 
+  // Handle manual file selection
   const fileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -31,26 +34,27 @@ const UserVoice: React.FC = () => {
     }
   };
 
+  // Handle file upload and transformation
   const fileUpload = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setGenStatus('loading');
 
     try {
-      const formData = new FormData();
       if (!audioFile) {
-        console.error('No file selected');
+        console.error('No audio file available to upload.');
         return;
       }
+
+      const formData = new FormData();
       formData.append('file', audioFile);
 
-      // No token required for transformation
       const response = await fetch('http://localhost:4040/api/transform', {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error(`Transform failed: ${response.status}`);
+        throw new Error(`Transform failed with status: ${response.status}`);
       }
 
       const blob = await response.blob();
@@ -59,32 +63,30 @@ const UserVoice: React.FC = () => {
       setTransformedFile(new File([blob], 'transformed.wav', { type: 'audio/wav' }));
       setGenStatus('done');
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error transforming audio:', err);
       setGenStatus('error');
     }
   };
 
+  // Save the audio pair to the backend
   const saveAudio = async () => {
     setIsSaving(true);
-  
+
     try {
       const token = localStorage.getItem('jwtToken');
       if (!token) {
-        throw new Error('Not authenticated');
+        throw new Error('User is not authenticated.');
       }
-  
+
       const formData = new FormData();
-      if (!audioFile) throw new Error('Original audio file is missing');
+      if (!audioFile) throw new Error('Original audio file is missing.');
       formData.append('originalFile', audioFile);
-  
-      if (!localTransformedURL) throw new Error('Transformed audio URL is missing');
+
+      if (!localTransformedURL) throw new Error('Transformed audio URL is missing.');
       const transformedBlob = await fetch(localTransformedURL).then((r) => r.blob());
       const transformedFile = new File([transformedBlob], 'transformed.wav', { type: 'audio/wav' });
       formData.append('transformedFile', transformedFile);
-  
-      console.log('Sending files to upload:', { originalFile: audioFile, transformedFile });
-  
-      // Upload files to receive URLs
+
       const uploadResponse = await fetch('http://localhost:4040/api/upload', {
         method: 'POST',
         headers: {
@@ -92,17 +94,14 @@ const UserVoice: React.FC = () => {
         },
         body: formData,
       });
-  
+
       if (!uploadResponse.ok) {
-        throw new Error('File upload failed');
+        throw new Error('File upload failed.');
       }
-  
+
       const uploadData = await uploadResponse.json();
       const { originalUrl, transformedUrl } = uploadData.data;
-  
-      console.log('Received URLs from upload:', { originalUrl, transformedUrl });
-  
-      // Save audio pair
+
       const saveResponse = await fetch('http://localhost:4040/api/save-audio', {
         method: 'POST',
         headers: {
@@ -111,39 +110,43 @@ const UserVoice: React.FC = () => {
         },
         body: JSON.stringify({ originalUrl, transformedUrl }),
       });
-  
+
       if (!saveResponse.ok) {
-        throw new Error('Failed to save audio');
+        throw new Error('Failed to save audio.');
       }
-  
-      console.log('Audio saved successfully');
+
+      console.log('Audio saved successfully.');
     } catch (error) {
       console.error('Error saving audio:', error);
     } finally {
       setIsSaving(false);
     }
   };
-  
-  
-  
 
   return (
     <div className="card shadow-xl bg-base-100 p-4 mt-4">
       <h2 className="card-title">Your Voice</h2>
+      {/* File input for manual uploads */}
       <input
         type="file"
         accept="audio/*"
         className="file-input file-input-bordered file-input-secondary w-full max-w-xs m-1"
         onChange={fileSelect}
       />
+
+      {/* Audio recorder for live recordings */}
+      <AudioRecorder setAudioURL={setLocalAudioURL} setAudioFile={setAudioFile} />
+
+      {/* Upload and transform button */}
       <button
-        className="btn btn-primary"
+        className="btn btn-primary mt-2"
         onClick={fileUpload}
         disabled={!audioFile || generationStatus === 'loading'}
       >
         {generationStatus === 'loading' ? 'Processing...' : 'Upload'}
       </button>
 
+      {/* Show loading state */}
       {generationStatus === 'loading' && (
         <div>
           <h2 className="card-title">Your accompAInament is being prepared...</h2>
@@ -151,20 +154,20 @@ const UserVoice: React.FC = () => {
         </div>
       )}
 
+      {/* Show audio players after processing */}
       {generationStatus === 'done' && (
         <>
           <div className="mt-4">
             <h3 className="text-lg font-semibold">Original Audio:</h3>
             <AudioPlayer audioURL={localAudioURL} />
           </div>
-          
           <div className="mt-4">
             <h3 className="text-lg font-semibold">Transformed Audio:</h3>
             <AudioPlayer audioURL={localTransformedURL} />
           </div>
-          
+          {/* Save button for logged-in users */}
           {isLoggedIn && (
-            <button 
+            <button
               className={`btn btn-secondary mt-4 ${isSaving ? 'loading' : ''}`}
               onClick={saveAudio}
               disabled={isSaving}
