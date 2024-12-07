@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AudioPlayer from './AudioPlayer';
-import AudioRecorder from './AudioRecorder';
+import AudioPlayer from '../core/AudioPlayer';
+import AudioRecorder from '../core/AudioRecorder';
 
 interface UploadResponse {
   success: boolean;

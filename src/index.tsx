@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom"; // Core routing components
-import App from "./components/App";
-import TestComponent from "./components/TestComponent";
+import App from "./components/layouts/App";
+import TestComponent from "./components/features/TestComponent";
 import Login from "./pages/Login";
 import Register from "./pages/Register"
 /**
