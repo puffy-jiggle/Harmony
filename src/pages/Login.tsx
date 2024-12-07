@@ -40,9 +40,11 @@ const Login: React.FC = () => {
         return;
       }
 
-      localStorage.setItem('jwtToken', responseData.token);
-      console.log('Token stored successfully');
+      //Store JWT token in localStorage
+      localStorage.setItem('jwtToken', responseData.token)
+      localStorage.setItem('username', data.userName)
       
+
       setIsLoggedIn(true);
       setErrorMessage(null);
       navigate('/');
@@ -53,17 +55,18 @@ const Login: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    if(token) {
-      setIsLoggedIn(true);
-    }
-  },[])
+  // useEffect(() => {
+  //   const token = localStorage.getItem('jwtToken');
+  //   if(token) {
+  //     setIsLoggedIn(true);
+  //   }
+  // },[])
 
   // Logout handler
   const handleLogout = () => {
     // Remove the JWT token from localStorage
     localStorage.removeItem('jwtToken');
+    localStorage.removeItem('username')
     setIsLoggedIn(false);
   }
 
