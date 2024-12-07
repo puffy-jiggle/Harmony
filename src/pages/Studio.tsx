@@ -56,8 +56,9 @@ const Studio = () => {
     return (
       <div className="min-h-screen bg-base-200">
         <Navigation />
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
+          <h2 className="text-xl font-semibold mb-4">Loading your harmonies...</h2>
+          <span className="loading loading-bars loading-lg"></span>
         </div>
       </div>
     );

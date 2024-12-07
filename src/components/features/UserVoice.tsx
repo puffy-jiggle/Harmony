@@ -137,6 +137,14 @@ const UserVoice: React.FC = () => {
       {/* Audio recorder for live recordings */}
       <AudioRecorder setAudioURL={setLocalAudioURL} setAudioFile={setAudioFile} />
 
+      {/* Show original audio player when available */}
+      {localAudioURL && (
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold">Original Audio:</h3>
+          <AudioPlayer audioURL={localAudioURL} />
+        </div>
+      )}
+
       {/* Upload and transform button */}
       <button
         className="btn btn-primary mt-2"

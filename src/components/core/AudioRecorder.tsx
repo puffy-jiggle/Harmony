@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
 interface AudioProps {
-  setAudioURL: any;
-  setAudioFile: any;
+  setAudioURL: (url: string) => void;
+  setAudioFile: (file: File) => void;
 }
 
 const AudioRecorder: React.FC<AudioProps> = (props: AudioProps) => {
