@@ -1,26 +1,36 @@
 import { Request } from 'express';
 
-// Custom Error Type 
+// Error Types
 export type CustomError = {
   log: string,
   status: number,
   message: string | {err: string}
 };
 
-// JWT Payload Type
+// Auth Types
 export interface JWTPayload {
   id: number;
   username: string;
 }
 
-// Audio Storage Types
+// Storage Types
+export type AudioBucketName = 'original-audio' | 'transformed-audio';
+
+export interface AudioUpload {
+  fileContent: Buffer;
+  fileName: string;
+  contentType: string;
+  userId: string;
+  bucketName: AudioBucketName;
+}
+
+// Response Types
 export interface AudioStorageResponse {
   originalUrl: string;
   transformedUrl: string;
 }
 
-export type AudioBucketName = 'original-audio' | 'transformed-audio';
-
+// Database Types
 export interface AudioRecord {
   id: number;
   user_id: number;
@@ -31,7 +41,7 @@ export interface AudioRecord {
   created_at: Date;
 }
 
-// Extend Express Request
+// Express Extensions
 declare global {
   namespace Express {
     interface Request {

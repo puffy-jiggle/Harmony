@@ -1,5 +1,10 @@
+/**
+ * Audio Controller
+ * Handles file upload, storage, and ML service integration
+ */
+
 import { Request, Response, NextFunction } from 'express';
-import { uploadAudio, deleteAudio } from '../model/storage';
+import { uploadAudio } from '../model/storage';
 import pool from '../model/db';
 import * as fs from 'node:fs/promises';
 import { CustomError, AudioStorageResponse } from '../types';
@@ -19,31 +24,29 @@ const audioController = {
       return next(err);
     }
 
-    const tempFilePath = req.file.path;
-    let uploadedFiles: Partial<AudioStorageResponse> = {};
-
     try {
-      // Read the uploaded file
-      console.log('Reading file from:', tempFilePath);
-      const fileBuffer = await fs.readFile(tempFilePath);
-      console.log('File read successfully, size:', fileBuffer.length);
-      
-      // Store original in Supabase
-      console.log('Uploading original file to storage...');
-      uploadedFiles.originalUrl = await uploadAudio(
-        fileBuffer,
-        req.file.originalname,
-        'original-audio',
-        req.user.id.toString()
-      );
-      console.log('Original file uploaded:', uploadedFiles.originalUrl);
+      // Read uploaded file
+      console.log('Reading file from:', req.file.path);
+      const fileContent = await fs.readFile(req.file.path);
+      console.log('File read successfully, size:', fileContent.length);
 
-      // Prepare for ML service
-      console.log('Preparing ML service request...');
-      const formData = new FormData();
-      formData.append('audio_file', new Blob([fileBuffer], { type: 'audio/wav' }));
+      // Upload original to Supabase
+      console.log('Uploading original file...');
+      const originalUrl = await uploadAudio({
+        fileContent,
+        fileName: req.file.originalname,
+        contentType: req.file.mimetype,
+        userId: req.user.id.toString(),
+        bucketName: 'original-audio'
+      });
 
+      // Prepare ML service request
       console.log('Sending to ML service...');
+      const formData = new FormData();
+      formData.append('audio_file', new File([fileContent], req.file.originalname, {
+        type: req.file.mimetype
+      }));
+
       const mlResponse = await fetch('http://localhost:8000/generate', {
         method: 'POST',
         body: formData
@@ -56,43 +59,63 @@ const audioController = {
       // Process transformed audio
       console.log('Processing transformed audio...');
       const transformedBuffer = Buffer.from(await mlResponse.arrayBuffer());
-      console.log('Transformed audio size:', transformedBuffer.length);
       const transformedFileName = `transformed_${req.file.originalname}`;
-      
-      uploadedFiles.transformedUrl = await uploadAudio(
-        transformedBuffer,
-        transformedFileName,
-        'transformed-audio',
-        req.user.id.toString()
-      );
-      console.log('Transformed file uploaded:', uploadedFiles.transformedUrl);
 
-      if (!uploadedFiles.originalUrl || !uploadedFiles.transformedUrl) {
-        throw new Error('Failed to get URLs for uploaded files');
-      }
-
-      // Return success with URLs
-      const response: AudioStorageResponse = {
-        originalUrl: uploadedFiles.originalUrl,
-        transformedUrl: uploadedFiles.transformedUrl
-      };
-
-      res.json({
-        success: true,
-        data: response
+      // Upload transformed to Supabase
+      const transformedUrl = await uploadAudio({
+        fileContent: transformedBuffer,
+        fileName: transformedFileName,
+        contentType: 'audio/wav',
+        userId: req.user.id.toString(),
+        bucketName: 'transformed-audio'
       });
 
+      // Store URLs in database
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        // Save original audio URL
+        const originalResult = await client.query(
+          `INSERT INTO audio (user_id, "audioURL", file_type, is_saved)
+           VALUES ($1, $2, 'original', true)
+           RETURNING id`,
+          [req.user.id, originalUrl]
+        );
+
+        // Save transformed audio URL with reference to original
+        await client.query(
+          `INSERT INTO audio (user_id, "audioURL", file_type, is_saved, pair_id)
+           VALUES ($1, $2, 'transformed', true, $3)`,
+          [req.user.id, transformedUrl, originalResult.rows[0].id]
+        );
+
+        await client.query('COMMIT');
+
+        // Send response
+        const response: AudioStorageResponse = {
+          originalUrl,
+          transformedUrl
+        };
+
+        res.json({
+          success: true,
+          data: response
+        });
+
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+
     } catch (error) {
-      // Cleanup on failure
-      if (uploadedFiles.originalUrl) {
-        await deleteAudio(uploadedFiles.originalUrl, 'original-audio')
-          .catch((err: Error) => console.error('Cleanup error (original):', err));
-      }
-      if (uploadedFiles.transformedUrl) {
-        await deleteAudio(uploadedFiles.transformedUrl, 'transformed-audio')
-          .catch((err: Error) => console.error('Cleanup error (transformed):', err));
-      }
-      
+      console.error('Error in upload:', error instanceof Error ? {
+        message: error.message,
+        stack: error.stack
+      } : error);
+
       const err: CustomError = {
         log: `Audio processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         status: 500,
@@ -101,16 +124,14 @@ const audioController = {
       next(err);
 
     } finally {
-      // Always cleanup temp file
-      if (tempFilePath) {
-        console.log('Cleaning up temp file:', tempFilePath);
-        await fs.unlink(tempFilePath)
-          .catch((err: Error) => console.error('Temp file cleanup error:', err));
+      // Clean up temp file
+      if (req.file?.path) {
+        console.log('Cleaning up temp file:', req.file.path);
+        await fs.unlink(req.file.path)
+          .catch(err => console.error('Temp file cleanup error:', err));
       }
     }
-  },
-
-  // Rest of your controller...
+  }
 };
 
 export default audioController;

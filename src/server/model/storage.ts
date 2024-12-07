@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
-import { CustomError, AudioBucketName } from '../types';
+import { CustomError, AudioUpload, AudioBucketName } from '../types';
 
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
   process.env.SUPABASE_ANON_KEY || ''
 );
 
-const BUCKETS = ['original-audio', 'transformed-audio'] as const;
+const BUCKETS: AudioBucketName[] = ['original-audio', 'transformed-audio'];
 
 export const setupStorage = async () => {
   try {
@@ -20,23 +20,16 @@ export const setupStorage = async () => {
         .getBucket(bucketName);
 
       if (getBucketError) {
-        console.error(`Error checking bucket ${bucketName}:`, getBucketError);
-        
         if (getBucketError.message?.includes('not found')) {
-          console.log(`Bucket ${bucketName} not found, attempting to create...`);
-          
-          const { error: createError } = await supabase
-            .storage
+          console.log(`Creating bucket: ${bucketName}`);
+          const { error: createError } = await supabase.storage
             .createBucket(bucketName, {
               public: false,
               fileSizeLimit: 52428800, // 50MB
             });
 
-          if (createError) {
-            console.error(`Failed to create bucket ${bucketName}:`, createError);
-            throw createError;
-          }
-          console.log(`Successfully created bucket: ${bucketName}`);
+          if (createError) throw createError;
+          console.log(`Created bucket: ${bucketName}`);
         } else {
           throw getBucketError;
         }
@@ -44,12 +37,10 @@ export const setupStorage = async () => {
         console.log(`Bucket ${bucketName} already exists`);
       }
     }
-
-    console.log('Storage setup completed successfully');
   } catch (error: any) {
     console.error('Storage setup error:', error);
     throw {
-      log: `Storage Error: Storage setup failed - ${error.message}`,
+      log: `Storage Error: ${error.message}`,
       status: 500,
       message: { err: 'Storage setup failed' }
     } as CustomError;
@@ -57,23 +48,22 @@ export const setupStorage = async () => {
 };
 
 export const uploadAudio = async (
-  file: Buffer,
-  fileName: string,
-  bucketName: AudioBucketName,
-  userId: string
+  { fileContent, fileName, contentType, userId, bucketName }: AudioUpload
 ): Promise<string> => {
   try {
     const filePath = `${userId}/${Date.now()}_${fileName}`;
     
+    // Upload to storage
     const { error: uploadError } = await supabase.storage
       .from(bucketName)
-      .upload(filePath, file, {
-        contentType: 'audio/wav',
-        upsert: false
+      .upload(filePath, fileContent, { 
+        contentType,
+        upsert: true 
       });
 
     if (uploadError) throw uploadError;
 
+    // Get public URL
     const { data } = supabase.storage
       .from(bucketName)
       .getPublicUrl(filePath);
@@ -83,7 +73,7 @@ export const uploadAudio = async (
   } catch (error: any) {
     console.error('Upload error:', error);
     throw {
-      log: `Storage Error: File upload failed - ${error.message}`,
+      log: `Storage Error: ${error.message}`,
       status: 500,
       message: { err: 'File upload failed' }
     } as CustomError;
@@ -103,7 +93,7 @@ export const deleteAudio = async (
   } catch (error: any) {
     console.error('Delete error:', error);
     throw {
-      log: `Storage Error: File deletion failed - ${error.message}`,
+      log: `Storage Error: ${error.message}`,
       status: 500,
       message: { err: 'File deletion failed' }
     } as CustomError;
